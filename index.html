@@ -208,7 +208,12 @@
                   <sc-if value="{{ c.reason }}" hint-placeholder-val="{{ false }}">
                     <div style="font-size:10.5px;color:var(--accFg);margin-top:6px">{{ c.reason }}</div>
                   </sc-if>
-                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+                  <select onChange="{{ c.setStage }}" style="width:100%;margin-top:10px;border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:6px 8px;font-size:11.5px;font-family:inherit;color:var(--text2);outline:none;cursor:pointer">
+                    <sc-for list="{{ c.stageOptions }}" as="o" hint-placeholder-count="6">
+                      <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
                     <sc-for list="{{ c.actions }}" as="a" hint-placeholder-count="2">
                       <button onClick="{{ a.go }}" style="{{ a.style }}" style-hover="background:var(--soft)">
                         <span style="{{ a.iconStyle }}"></span>{{ a.label }}
@@ -591,24 +596,31 @@ class Component extends DCLogic {
           v === id ? "background:var(--soft);color:var(--text);font-weight:600;box-shadow:inset 2px 0 0 var(--accent)" : "background:transparent;color:var(--text3);font-weight:400"}`,
       }));
 
-    const nextOf = s => STAGES[STAGES.indexOf(s) + 1];
+    const nextOf = s => STAGES[Math.min(STAGES.length - 1, STAGES.indexOf(s) + 1)];
+    const prevOf = s => STAGES[Math.max(0, STAGES.indexOf(s) - 1)];
     const stages = STAGES.map((name, i) => {
       const cards = at(name);
       return {
         name, count: cards.length, total: compact(sum(cards)), empty: cards.length === 0,
         lineStyle: `height:2px;border-radius:99px;background:${name === "Perdido" ? "var(--line2)" : "linear-gradient(90deg,var(--accent),var(--accent2))"};opacity:${name === "Perdido" ? 1 : 1 - i * 0.13};box-shadow:${name === "Perdido" ? "none" : "var(--glow)"}`,
-        cards: cards.map(c => ({
-          name: c.name, value: brl(c.value), owner: c.owner, reason: c.reason,
-          ownerIconStyle: ico(P.user, 11),
-          actions: (name === "Perdido"
+        cards: cards.map(c => {
+          const actionList = name === "Perdido"
             ? [["Reciclar", () => this.recycle(c.id)]]
-            : name === "Fechado"
-              ? [["Ver cliente", () => this.setState({ view: "clients" })]]
-              : [["Avançar", () => this.move(c.id, nextOf(name))], ["Perdi", () => this.move(c.id, "Perdido")]]
-          ).map(([label, go]) => ({ label, go,
-            iconStyle: ico({ "Avançar": P.arrow, "Perdi": P.x, "Reciclar": P.recycle, "Ver cliente": P.user }[label] || P.arrow, 12),
-            style: "display:inline-flex;align-items:center;gap:5px;font-family:inherit;font-size:11px;font-weight:500;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer" })),
-        })),
+            : [
+                ...(i > 0 ? [["Voltar", () => this.move(c.id, prevOf(name))]] : []),
+                ...(name !== "Fechado" ? [["Avançar", () => this.move(c.id, nextOf(name))]] : [["Ver cliente", () => this.setState({ view: "clients" })]]),
+                ...(name !== "Fechado" ? [["Perdi", () => this.move(c.id, "Perdido")]] : []),
+              ];
+          return {
+            name: c.name, value: brl(c.value), owner: c.owner, reason: c.reason,
+            ownerIconStyle: ico(P.user, 11),
+            setStage: (e) => this.move(c.id, e.target.value),
+            stageOptions: STAGES.map(s => ({ value: s, label: s, selected: s === name })),
+            actions: actionList.map(([label, go]) => ({ label, go,
+              iconStyle: ico({ "Avançar": P.arrow, "Voltar": P.arrow, "Perdi": P.x, "Reciclar": P.recycle, "Ver cliente": P.user }[label] || P.arrow, 12),
+              style: `display:inline-flex;align-items:center;gap:5px;font-family:inherit;font-size:11px;font-weight:500;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer${label === "Voltar" ? ";transform:scaleX(-1)" : ""}` })),
+          };
+        }),
       };
     });
 
