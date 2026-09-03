@@ -83,11 +83,6 @@
     cursor:pointer;padding:0}
   #auth-links button:hover{color:#FFB300}
 
-  #auth-user{position:fixed;top:14px;right:18px;z-index:50;display:flex;align-items:center;gap:10px;
-    font-family:'Inter Tight',system-ui,sans-serif;font-size:11.5px;color:var(--muted,#86898E)}
-  #auth-user button{font-family:inherit;font-size:11.5px;padding:5px 10px;border-radius:7px;
-    border:1px solid var(--line,#E8E8E4);background:var(--surface,#fff);color:var(--text3,#5C5F64);cursor:pointer}
-
   @media (max-width:820px){
     #auth-card{grid-template-columns:1fr}
     #auth-brand{display:none}
@@ -165,14 +160,6 @@
       </div>`;
     document.body.appendChild(el);
     return el;
-  }
-
-  function userBar(email) {
-    const el = document.createElement("div");
-    el.id = "auth-user";
-    el.innerHTML = `<span>${email}</span><button id="auth-out">Sair</button>`;
-    document.body.appendChild(el);
-    el.querySelector("#auth-out").onclick = () => window.signOut();
   }
 
   /* ----------------------------------------------------------------- init */
@@ -284,7 +271,6 @@
 
       window.me = row || { auth_user_id: user.id, email: user.email, role: "consultor" };
       box.remove();
-      userBar(user.email);
       readyCbs.splice(0).forEach((cb) => cb(window.me));
       document.dispatchEvent(new CustomEvent("auth:ready", { detail: window.me }));
     }
