@@ -18,7 +18,9 @@
         .select(`
           id, title, stage, value_brl, city, uf, source,
           lost_at, recycle_at, loss_reason_id,
-          clients ( id, name, kind, doc ),
+          opportunity_type, first_contact_at, avg_bill_brl, has_solar, deadline, need_detail,
+          last_contact_at, last_contact_channel, last_contact_note, next_action, next_action_at,
+          clients ( id, name, kind, doc, contact_name, contact_role, whatsapp, phone, segment ),
           consultants ( id, name ),
           loss_reasons ( label )
         `)
@@ -27,6 +29,7 @@
 
       const fmtDate = (d) =>
         d ? new Date(d).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }) : null;
+      const fmtFull = (d) => (d ? new Date(d + "T12:00:00").toLocaleDateString("pt-BR") : null);
 
       return (data || []).map((p) => ({
         id: p.id,
@@ -44,6 +47,19 @@
         recall: p.recycle_at
           ? new Date(p.recycle_at + "T12:00:00").toLocaleDateString("pt-BR", { month: "short", year: "numeric" })
           : null,
+        contactName: p.clients?.contact_name || "",
+        contactRole: p.clients?.contact_role || "",
+        whatsapp: p.clients?.whatsapp || p.clients?.phone || "",
+        segment: p.clients?.segment || "",
+        opportunityType: p.opportunity_type || "Cliente",
+        firstContact: fmtFull(p.first_contact_at),
+        avgBill: p.avg_bill_brl,
+        hasSolar: p.has_solar,
+        deadline: p.deadline,
+        needDetail: p.need_detail,
+        nextAction: p.next_action || "",
+        nextActionAt: fmtFull(p.next_action_at),
+        lastContactNote: p.last_contact_note || "",
       }));
     },
 
@@ -62,7 +78,9 @@
     },
 
     /* ------------------------------------------------------- novo projeto */
-    /* form: { title, clientName, kind, doc, email, phone, city, uf, value, source } */
+    /* form: ver EMPTY_FORM em index.html — segue o checklist do guia
+       comercial de cadastro de leads (empresa, contato, origem, tipo de
+       oportunidade, qualificação e próxima ação) */
     async createProject(form) {
       const ownerId = window.me?.id || null;
       let clientId = null;
@@ -74,8 +92,11 @@
             name: form.clientName.trim(),
             kind: form.kind || "Residencial",
             doc: form.doc || null,
-            email: form.email || null,
-            phone: form.phone || null,
+            contact_name: form.contactName || null,
+            contact_role: form.contactRole || null,
+            whatsapp: form.whatsapp || null,
+            phone: form.whatsapp || null,
+            segment: form.segment || null,
             city: form.city || null,
             uf: (form.uf || "").toUpperCase().slice(0, 2) || null,
             owner_id: ownerId,
@@ -97,6 +118,17 @@
           source: form.source || null,
           city: form.city || null,
           uf: (form.uf || "").toUpperCase().slice(0, 2) || null,
+          opportunity_type: form.opportunityType || "Cliente",
+          first_contact_at: form.firstContact || new Date().toISOString().slice(0, 10),
+          avg_bill_brl: form.avgBill ? Number(String(form.avgBill).replace(/\./g, "").replace(",", ".")) : null,
+          has_solar: form.hasSolar === "Sim" ? true : form.hasSolar === "Não" ? false : null,
+          deadline: form.deadline || null,
+          need_detail: form.needDetail || null,
+          last_contact_at: new Date().toISOString(),
+          last_contact_channel: form.channel || null,
+          last_contact_note: form.contactNote || null,
+          next_action: form.nextAction || null,
+          next_action_at: form.nextActionAt || null,
         })
         .select("id")
         .single();
