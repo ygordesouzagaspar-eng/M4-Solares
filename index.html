@@ -72,7 +72,7 @@
           <span style="{{ themeIconStyle }}"></span>
         </button>
         <button onClick="{{ openModal }}" style="display:flex;align-items:center;gap:7px;background:linear-gradient(140deg,var(--accent),var(--accent2));border:0;color:#1A1206;font-weight:600;font-size:12.5px;padding:9px 15px;border-radius:8px;font-family:inherit;cursor:pointer;box-shadow:var(--glow)" style-hover="filter:brightness(1.08)">
-          <span style="{{ plusIconStyle }}"></span>Novo projeto
+          <span style="{{ plusIconStyle }}"></span>Novo lead
         </button>
       </div>
     </header>
@@ -382,33 +382,44 @@
 
     <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
       <div style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px">
-        <div style="width:540px;max-height:88vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:18px">
+        <div style="width:600px;max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:20px">
           <div style="display:flex;align-items:center;justify-content:space-between">
-            <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Novo projeto</div>
+            <div>
+              <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Novo lead</div>
+              <div style="font-size:11.5px;color:var(--muted);margin-top:2px">Checklist do primeiro contato — M4 Engenharia</div>
+            </div>
             <button onClick="{{ closeModal }}" style="border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:7px;width:28px;height:28px;cursor:pointer;font-family:inherit;font-size:15px;line-height:1">×</button>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-            <sc-for list="{{ formFields }}" as="f" hint-placeholder-count="8">
-              <div style="{{ f.wrapStyle }}">
-                <label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px">{{ f.label }}</label>
-                <sc-if value="{{ f.isSelect }}" hint-placeholder-val="{{ false }}">
-                  <select onChange="{{ f.set }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none">
-                    <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="4">
-                      <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
-                    </sc-for>
-                  </select>
-                </sc-if>
-                <sc-if value="{{ f.isText }}" hint-placeholder-val="{{ true }}">
-                  <input value="{{ f.value }}" onInput="{{ f.set }}" placeholder="{{ f.placeholder }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none" />
-                </sc-if>
+          <sc-for list="{{ formSections }}" as="sec" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="font-size:11.5px;font-weight:600;color:var(--accFg);text-transform:uppercase;letter-spacing:.4px">{{ sec.title }}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <sc-for list="{{ sec.fields }}" as="f" hint-placeholder-count="6">
+                  <div style="{{ f.wrapStyle }}">
+                    <label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px">{{ f.label }}</label>
+                    <sc-if value="{{ f.isSelect }}" hint-placeholder-val="{{ false }}">
+                      <select onChange="{{ f.set }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none">
+                        <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="4">
+                          <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                        </sc-for>
+                      </select>
+                    </sc-if>
+                    <sc-if value="{{ f.isText }}" hint-placeholder-val="{{ true }}">
+                      <input value="{{ f.value }}" onInput="{{ f.set }}" placeholder="{{ f.placeholder }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none" />
+                    </sc-if>
+                    <sc-if value="{{ f.isDate }}" hint-placeholder-val="{{ false }}">
+                      <input type="date" value="{{ f.value }}" onInput="{{ f.set }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none" />
+                    </sc-if>
+                  </div>
+                </sc-for>
               </div>
-            </sc-for>
-          </div>
+            </div>
+          </sc-for>
 
           <div style="{{ modalMsgStyle }}">{{ modalMsg }}</div>
 
-          <div style="display:flex;gap:9px;justify-content:flex-end">
+          <div style="display:flex;gap:9px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:16px">
             <button onClick="{{ closeModal }}" style="font-family:inherit;font-size:12.5px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer">Cancelar</button>
             <button onClick="{{ saveProject }}" style="display:inline-flex;align-items:center;gap:7px;font-family:inherit;font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:8px;border:0;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#1A1206;cursor:pointer;box-shadow:var(--glow)">
               <span style="{{ plusIconStyle }}"></span>{{ saveLabel }}
@@ -459,7 +470,17 @@ const ico = (p, size = 15) => {
   return `display:inline-block;flex:0 0 auto;width:${size}px;height:${size}px;background:currentColor;-webkit-mask:${u} center/contain no-repeat;mask:${u} center/contain no-repeat`;
 };
 
-const EMPTY_FORM = { title: "", clientName: "", kind: "Residencial", doc: "", city: "", uf: "SP", value: "", source: "Indicação" };
+const EMPTY_FORM = {
+  // empresa / contato
+  title: "", clientName: "", contactName: "", contactRole: "", whatsapp: "",
+  kind: "Residencial", doc: "", segment: "", city: "", uf: "SP",
+  // origem / oportunidade
+  source: "Indicação", opportunityType: "Cliente", firstContact: "",
+  // qualificação (energia solar)
+  value: "", avgBill: "", hasSolar: "", deadline: "Agora", needDetail: "",
+  // acompanhamento
+  channel: "WhatsApp", contactNote: "", nextAction: "", nextActionAt: "",
+};
 
 class Component extends DCLogic {
   state = {
@@ -613,21 +634,58 @@ class Component extends DCLogic {
       saveLabel: this.state.saving ? "Salvando…" : "Criar projeto",
       modalMsg: this.state.modalMsg,
       modalMsgStyle: `font-size:12px;min-height:16px;color:${this.state.modalErr ? "var(--badFg)" : "var(--muted)"}`,
-      formFields: [
-        ["title", "Nome do projeto *", "Ex.: Usina 30 kWp — Padaria X", "full"],
-        ["clientName", "Cliente", "Nome ou razão social"],
-        ["kind", "Tipo de cliente", null, null, ["Residencial", "Empresa", "Rural", "Condomínio", "Poder público"]],
-        ["doc", "CPF / CNPJ", "Somente números"],
-        ["value", "Valor do projeto (R$)", "62000"],
-        ["city", "Cidade", "Campinas"],
-        ["uf", "UF", "SP"],
-        ["source", "Origem", null, null, ["Indicação", "Google Ads", "Feira / eventos", "Instagram", "Porta a porta"]],
-      ].map(([key, label, placeholder, span, options]) => ({
-        label, placeholder: placeholder || "", value: this.state.form[key],
-        isSelect: !!options, isText: !options,
-        wrapStyle: span === "full" ? "grid-column:1 / -1" : "",
-        options: (options || []).map(o => ({ value: o, label: o, selected: this.state.form[key] === o })),
-        set: (e) => this.setField(key, e.target.value),
+      formSections: [
+        {
+          title: "Cadastro inicial",
+          fields: [
+            ["title", "Nome do projeto *", "Ex.: Usina 30 kWp — Loja São João", "full"],
+            ["clientName", "Empresa / cliente", "Loja São João"],
+            ["contactName", "Nome do responsável", "Carlos"],
+            ["contactRole", "Cargo", "Proprietário"],
+            ["whatsapp", "WhatsApp", "(11) 99999-9999"],
+            ["segment", "Segmento", "Material de construção"],
+            ["kind", "Tipo de cliente", null, null, ["Residencial", "Empresa", "Rural", "Condomínio", "Poder público"]],
+            ["doc", "CPF / CNPJ", "Somente números"],
+            ["city", "Cidade / região", "Burgo Paulista"],
+            ["uf", "UF", "SP"],
+          ],
+        },
+        {
+          title: "Origem e oportunidade",
+          fields: [
+            ["source", "Origem do lead", null, null, ["Indicação", "Google Ads", "Feira / eventos", "Instagram", "Porta a porta", "Visita presencial"]],
+            ["opportunityType", "Tipo de oportunidade", null, null, ["Cliente", "Parceiro", "Ambos"]],
+            ["firstContact", "Data do primeiro contato", "", null, null, "date"],
+          ],
+        },
+        {
+          title: "Qualificação (se energia solar)",
+          fields: [
+            ["value", "Valor do projeto (R$)", "62000"],
+            ["avgBill", "Valor médio da conta (R$/mês)", "3500"],
+            ["hasSolar", "Já possui solar?", null, null, ["", "Sim", "Não"]],
+            ["deadline", "Prazo", null, null, ["Agora", "3–6 meses", "Sem previsão"]],
+            ["needDetail", "Necessidade / interesse", "Elétrica, parceria, solar…", "full"],
+          ],
+        },
+        {
+          title: "Acompanhamento — regra de ouro: sempre com próxima ação e data",
+          fields: [
+            ["channel", "Canal do contato", null, null, ["WhatsApp", "Ligação", "E-mail", "Visita presencial"]],
+            ["contactNote", "O que aconteceu", "Enviei portfólio e expliquei os serviços.", "full"],
+            ["nextAction", "Próxima ação", "Fazer follow-up"],
+            ["nextActionAt", "Data da próxima ação", "", null, null, "date"],
+          ],
+        },
+      ].map(sec => ({
+        title: sec.title,
+        fields: sec.fields.map(([key, label, placeholder, span, options, type]) => ({
+          label, placeholder: placeholder || "", value: this.state.form[key],
+          isSelect: !!options, isDate: type === "date", isText: !options && type !== "date",
+          wrapStyle: span === "full" ? "grid-column:1 / -1" : "",
+          options: (options || []).map(o => ({ value: o, label: o || "—", selected: this.state.form[key] === o })),
+          set: (e) => this.setField(key, e.target.value),
+        })),
       })),
 
       goalStyle: `width:${Math.min(100, Math.round(closedTotal / 18000))}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:var(--glow)`,
