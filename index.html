@@ -6,6 +6,8 @@
 <title>CRM Painéis Solares</title>
 <script src="./config.js"></script>
 <script src="./support.js"></script>
+<script src="./auth.js"></script>
+<script src="./data.js"></script>
 </head>
 <body>
 <x-dc>
@@ -21,6 +23,7 @@
   a:hover{color:var(--accFg)}
   ::-webkit-scrollbar{width:7px;height:7px}
   ::-webkit-scrollbar-thumb{background:#DFDFD9;border-radius:8px}
+  select option{background:var(--surface);color:var(--text)}
 </style>
 </helmet>
 <div style="display:grid;grid-template-columns:212px 1fr;min-height:100vh">
@@ -32,16 +35,15 @@
     <nav style="display:flex;flex-direction:column;gap:2px">
       <sc-for list="{{ nav }}" as="item" hint-placeholder-count="6">
         <button onClick="{{ item.go }}" style="{{ item.style }}" style-hover="background:var(--soft)">
-          <span>{{ item.label }}</span>
+          <span style="display:flex;align-items:center;gap:9px;min-width:0">
+            <span style="{{ item.iconStyle }}"></span>
+            <span>{{ item.label }}</span>
+          </span>
           <span style="{{ item.badgeStyle }}">{{ item.badge }}</span>
         </button>
       </sc-for>
     </nav>
-    <button onClick="{{ toggleTheme }}" style="margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:inherit;font-size:12.5px;color:var(--text3);background:transparent;border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer" style-hover="background:var(--soft)">
-      <span>{{ themeLabel }}</span>
-      <span style="{{ themeSwitchStyle }}"><i style="{{ themeKnobStyle }}"></i></span>
-    </button>
-    <div style="padding:0 8px;display:flex;flex-direction:column;gap:7px">
+    <div style="margin-top:auto;padding:0 8px;display:flex;flex-direction:column;gap:7px">
       <div style="font-size:11px;color:var(--muted)">Meta do mês</div>
       <div style="height:3px;background:var(--line);border-radius:99px;overflow:hidden"><div style="{{ goalStyle }}"></div></div>
       <div style="font-size:11.5px;color:var(--text3)">{{ goalLabel }}</div>
@@ -55,17 +57,31 @@
         <div style="font-size:12.5px;color:var(--muted);margin-top:5px">{{ subtitle }}</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <input placeholder="Buscar" style="border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none;width:180px" />
-        <button style="background:linear-gradient(140deg,var(--accent),var(--accent2));border:0;color:#1A1206;font-weight:600;font-size:12.5px;padding:9px 15px;border-radius:8px;font-family:inherit;cursor:pointer;box-shadow:var(--glow)" style-hover="filter:brightness(1.08)">Novo projeto</button>
+        <div style="position:relative;display:flex;align-items:center">
+          <span style="{{ searchIconStyle }}"></span>
+          <input placeholder="Buscar" value="{{ query }}" onInput="{{ setQuery }}" style="border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px 8px 32px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none;width:200px" />
+        </div>
+        <button onClick="{{ toggleTheme }}" title="{{ themeLabel }}" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:8px;cursor:pointer" style-hover="background:var(--soft);color:var(--text)">
+          <span style="{{ themeIconStyle }}"></span>
+        </button>
+        <button onClick="{{ openModal }}" style="display:flex;align-items:center;gap:7px;background:linear-gradient(140deg,var(--accent),var(--accent2));border:0;color:#1A1206;font-weight:600;font-size:12.5px;padding:9px 15px;border-radius:8px;font-family:inherit;cursor:pointer;box-shadow:var(--glow)" style-hover="filter:brightness(1.08)">
+          <span style="{{ plusIconStyle }}"></span>Novo projeto
+        </button>
       </div>
     </header>
+
+    <sc-if value="{{ banner }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ bannerStyle }}">{{ banner }}</div>
+    </sc-if>
 
     <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
       <div style="display:flex;flex-direction:column;gap:26px">
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
           <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
             <div style="background:var(--surface);padding:20px 22px">
-              <div style="font-size:11.5px;color:var(--muted)">{{ k.label }}</div>
+              <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)">
+                <span style="{{ k.iconStyle }}"></span>{{ k.label }}
+              </div>
               <div style="font-size:24px;font-weight:600;margin:8px 0 5px;letter-spacing:-.7px">{{ k.value }}</div>
               <div style="{{ k.deltaStyle }}">{{ k.delta }}</div>
             </div>
@@ -102,7 +118,9 @@
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
             <sc-for list="{{ agenda }}" as="a" hint-placeholder-count="3">
               <div style="background:var(--surface);padding:18px 20px">
-                <div style="font-size:11px;color:var(--muted2)">{{ a.when }}</div>
+                <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted2)">
+                  <span style="{{ a.iconStyle }}"></span>{{ a.when }}
+                </div>
                 <div style="font-size:13px;font-weight:500;margin:6px 0 4px">{{ a.title }}</div>
                 <div style="font-size:11.5px;color:var(--muted)">{{ a.who }}</div>
               </div>
@@ -129,13 +147,17 @@
                 <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px" style-hover="border-color:var(--line2)">
                   <div style="font-size:12.5px;font-weight:500;line-height:1.35">{{ c.name }}</div>
                   <div style="font-size:13px;font-weight:600;color:var(--text);margin-top:8px">{{ c.value }}</div>
-                  <div style="font-size:10.5px;color:var(--muted2);margin-top:8px">{{ c.owner }}</div>
+                  <div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted2);margin-top:8px">
+                    <span style="{{ c.ownerIconStyle }}"></span>{{ c.owner }}
+                  </div>
                   <sc-if value="{{ c.reason }}" hint-placeholder-val="{{ false }}">
                     <div style="font-size:10.5px;color:var(--accFg);margin-top:6px">{{ c.reason }}</div>
                   </sc-if>
                   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
                     <sc-for list="{{ c.actions }}" as="a" hint-placeholder-count="2">
-                      <button onClick="{{ a.go }}" style="{{ a.style }}" style-hover="background:var(--soft)">{{ a.label }}</button>
+                      <button onClick="{{ a.go }}" style="{{ a.style }}" style-hover="background:var(--soft)">
+                        <span style="{{ a.iconStyle }}"></span>{{ a.label }}
+                      </button>
                     </sc-for>
                   </div>
                 </div>
@@ -167,6 +189,9 @@
             <div style="color:var(--text3)">{{ c.owner }}</div>
           </div>
         </sc-for>
+        <sc-if value="{{ clientsEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:26px 20px;font-size:12.5px;color:var(--faint)">Nenhum projeto fechado ainda.</div>
+        </sc-if>
         <div style="padding:14px 20px;font-size:11.5px;color:var(--muted2);display:flex;gap:26px">
           <span>{{ clientCount }} clientes</span><span>Valor total dos projetos {{ clientTotal }}</span>
         </div>
@@ -195,8 +220,9 @@
               <div style="color:var(--muted2)">{{ l.date }}</div>
               <div style="color:var(--text3)">{{ l.recall }}</div>
               <div style="display:flex;gap:7px;justify-content:flex-end">
-                <button onClick="{{ l.recycle }}" style="font-family:inherit;font-size:11.5px;font-weight:500;padding:7px 12px;border-radius:7px;border:1px solid var(--accLine);background:var(--accSoft);color:var(--accFg);cursor:pointer" style-hover="background:var(--accSoft2)">Reciclar lead</button>
-                <button style="font-family:inherit;font-size:11.5px;padding:7px 11px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer" style-hover="background:var(--soft)">Arquivar</button>
+                <button onClick="{{ l.recycle }}" style="display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:11.5px;font-weight:500;padding:7px 12px;border-radius:7px;border:1px solid var(--accLine);background:var(--accSoft);color:var(--accFg);cursor:pointer" style-hover="background:var(--accSoft2)">
+                  <span style="{{ l.recycleIconStyle }}"></span>Reciclar lead
+                </button>
               </div>
             </div>
           </sc-for>
@@ -234,6 +260,9 @@
               <div><span style="{{ r.statusStyle }}">{{ r.status }}</span></div>
             </div>
           </sc-for>
+          <sc-if value="{{ commEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:26px 20px;font-size:12.5px;color:var(--faint)">Nenhuma comissão apurada no período.</div>
+          </sc-if>
           <div style="display:flex;gap:28px;padding:15px 20px;font-size:11.5px;color:var(--muted2);white-space:nowrap">
             <span>Valor dos projetos <b style="color:var(--text);font-weight:600">{{ commRevenue }}</b></span>
             <span>Total comissões <b style="color:var(--text);font-weight:600">{{ commTotal }}</b></span>
@@ -250,7 +279,6 @@
             </div>
           </sc-for>
           </div>
-          <button style="align-self:flex-start;background:linear-gradient(140deg,var(--accent),var(--accent2));border:0;color:#1A1206;font-family:inherit;font-size:12.5px;font-weight:600;padding:11px 18px;border-radius:8px;cursor:pointer;box-shadow:var(--glow)" style-hover="filter:brightness(1.08)">Fechar folha do mês</button>
         </section>
       </div>
     </sc-if>
@@ -280,6 +308,9 @@
                 </div>
               </sc-for>
             </div>
+            <sc-if value="{{ regionsEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:12.5px;color:var(--faint);padding:11px 0">Sem dados de região.</div>
+            </sc-if>
           </section>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
@@ -293,90 +324,190 @@
         </div>
       </div>
     </sc-if>
+
+    <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px">
+        <div style="width:540px;max-height:88vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Novo projeto</div>
+            <button onClick="{{ closeModal }}" style="border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:7px;width:28px;height:28px;cursor:pointer;font-family:inherit;font-size:15px;line-height:1">×</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <sc-for list="{{ formFields }}" as="f" hint-placeholder-count="8">
+              <div style="{{ f.wrapStyle }}">
+                <label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px">{{ f.label }}</label>
+                <sc-if value="{{ f.isSelect }}" hint-placeholder-val="{{ false }}">
+                  <select onChange="{{ f.set }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none">
+                    <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="4">
+                      <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                </sc-if>
+                <sc-if value="{{ f.isText }}" hint-placeholder-val="{{ true }}">
+                  <input value="{{ f.value }}" onInput="{{ f.set }}" placeholder="{{ f.placeholder }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none" />
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="{{ modalMsgStyle }}">{{ modalMsg }}</div>
+
+          <div style="display:flex;gap:9px;justify-content:flex-end">
+            <button onClick="{{ closeModal }}" style="font-family:inherit;font-size:12.5px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer">Cancelar</button>
+            <button onClick="{{ saveProject }}" style="display:inline-flex;align-items:center;gap:7px;font-family:inherit;font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:8px;border:0;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#1A1206;cursor:pointer;box-shadow:var(--glow)">
+              <span style="{{ plusIconStyle }}"></span>{{ saveLabel }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
   </main>
 </div>
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
-const ACC = "var(--accent)";
-const kwp = n => n.toLocaleString("pt-BR") + " kWp";
 const brl = n => "R$ " + n.toLocaleString("pt-BR");
 const compact = n => n >= 1e6 ? "R$ " + (n / 1e6).toFixed(2).replace(".", ",") + " M" : "R$ " + Math.round(n / 1e3) + " K";
 const chip = (bg, fg) => `font-size:10.5px;font-weight:500;padding:3px 9px;border-radius:99px;background:${bg};color:${fg}`;
 const STAGES = ["Lead", "Qualificado", "Proposta", "Negociação", "Fechado", "Perdido"];
-const REASONS = ["Preço acima do orçamento", "Optou por concorrente", "Sem crédito aprovado", "Postergou o projeto"];
 
-const DEALS = [
-  [1, "Padaria Pão Quente", "Empresa · CNPJ", "Campinas / SP", 18, 62000, "Lead", "Ana L."],
-  [2, "Marcos Vieira", "Residencial · CPF", "Valinhos / SP", 6.5, 24400, "Lead", "Ana L."],
-  [3, "Cond. Vista Sul", "Condomínio · CNPJ", "Sorocaba / SP", 54, 189000, "Lead", "Diego S."],
-  [4, "Supermercado Boa Vista", "Empresa · CNPJ", "Sorocaba / SP", 96, 312000, "Qualificado", "Diego S."],
-  [5, "Clínica Vitalis", "Empresa · CNPJ", "Jundiaí / SP", 22, 74500, "Qualificado", "Bruna R."],
-  [6, "Fazenda Santa Rita", "Rural · CNPJ", "Uberaba / MG", 140, 438000, "Proposta", "Rafael M."],
-  [7, "Escola Aprender", "Empresa · CNPJ", "Campinas / SP", 31, 104000, "Proposta", "Ana L."],
-  [8, "Metalúrgica Ferrari", "Empresa · CNPJ", "Campinas / SP", 210, 611000, "Negociação", "Rafael M."],
-  [9, "Hotel Miramar", "Empresa · CNPJ", "Ubatuba / SP", 64, 208000, "Negociação", "Diego S."],
-  [10, "Auto Posto Cruzeiro", "Empresa · CNPJ", "Ribeirão Preto / SP", 78, 251000, "Fechado", "Bruna R."],
-  [11, "Juliana Prado", "Residencial · CPF", "Valinhos / SP", 11, 39800, "Fechado", "Ana L."],
-  [12, "Ricardo Alves", "Residencial · CPF", "Indaiatuba / SP", 9, 33900, "Perdido", "Bruna R.", 0, "Jul 2026", "Set 2026"],
-  [13, "Transportadora Ipê", "Empresa · CNPJ", "Limeira / SP", 88, 274000, "Perdido", "Diego S.", 1, "Jun 2026", "Out 2026"],
-  [14, "Marina Costa", "Residencial · CPF", "Campinas / SP", 7.5, 27600, "Perdido", "Ana L.", 2, "Ago 2026", "Nov 2026"],
-  [15, "Frigorífico Serra", "Empresa · CNPJ", "Piracicaba / SP", 120, 371000, "Perdido", "Rafael M.", 3, "Mai 2026", "Jan 2027"],
-].map(([id, name, type, city, kwp, value, stage, owner, ri, date, recall]) => ({
-  id, name, type, city, kwp, value, stage, owner,
-  reason: ri === undefined ? null : REASONS[ri], date: date || null, recall: recall || null,
-}));
+/* ------------------------------------------------------------ ícones SVG */
+const P = {
+  grid:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  funnel:'<path d="M3 4h18l-7 8.2V19l-4 2v-8.8z"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/>',
+  recycle:'<path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 3.5V9h5.5"/>',
+  percent:'<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+  chart:'<line x1="3" y1="21" x2="3" y2="11"/><line x1="9" y1="21" x2="9" y2="4"/><line x1="15" y1="21" x2="15" y2="14"/><line x1="21" y1="21" x2="21" y2="8"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  search:'<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  arrow:'<line x1="4" y1="12" x2="18" y2="12"/><polyline points="12.5 6.5 18 12 12.5 17.5"/>',
+  x:'<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
+  user:'<path d="M20 21v-2a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v2"/><circle cx="12" cy="7" r="4"/>',
+  money:'<path d="M3 7h18v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 7l3-4h12l3 4"/><circle cx="12" cy="13.5" r="2.4"/>',
+  layers:'<polygon points="12 2 22 8 12 14 2 8"/><polyline points="2 14 12 20 22 14"/>',
+  check:'<circle cx="12" cy="12" r="9"/><polyline points="8 12.5 11 15.5 16 9.5"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>',
+  pin:'<path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/>',
+  bolt:'<polygon points="13 2 4 14 11 14 10 22 20 10 13 10"/>',
+};
+const uri = p => `url("data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`)}")`;
+const ico = (p, size = 15) => {
+  const u = uri(p);
+  return `display:inline-block;flex:0 0 auto;width:${size}px;height:${size}px;background:currentColor;-webkit-mask:${u} center/contain no-repeat;mask:${u} center/contain no-repeat`;
+};
+
+const EMPTY_FORM = { title: "", clientName: "", kind: "Residencial", doc: "", city: "", uf: "SP", value: "", source: "Indicação" };
 
 class Component extends DCLogic {
-  state = { view: "dash", deals: DEALS, dark: false };
+  state = {
+    view: "dash", deals: [], dark: false, loading: true, err: "", query: "",
+    modalOpen: false, saving: false, modalMsg: "", modalErr: false,
+    form: { ...EMPTY_FORM },
+  };
 
-  componentDidMount() { this.applyTheme(); }
+  componentDidMount() {
+    this.applyTheme();
+    if (window.onAuthReady) window.onAuthReady(() => this.load());
+    else this.setState({ loading: false, err: "auth.js não carregado." });
+  }
   componentDidUpdate() { this.applyTheme(); }
   applyTheme() { document.documentElement.dataset.theme = this.state.dark ? "dark" : "light"; }
 
-  move(id, stage) {
-    this.setState(s => ({ deals: s.deals.map(d => d.id === id ? { ...d, stage, reason: stage === "Perdido" ? d.reason || REASONS[0] : null } : d) }));
+  async load() {
+    try {
+      const deals = await window.CRM.listProjects();
+      this.setState({ deals, loading: false, err: "" });
+    } catch (e) {
+      this.setState({ loading: false, err: e.message || "Falha ao carregar projetos." });
+    }
   }
-  recycle(id) {
-    this.setState(s => ({ deals: s.deals.map(d => d.id === id ? { ...d, stage: "Lead", reason: null, date: null, recall: null } : d) }));
-    this.setState({ view: "funnel" });
+
+  async move(id, stage) {
+    this.setState(s => ({ deals: s.deals.map(d => d.id === id ? { ...d, stage } : d) }));
+    try { await window.CRM.setStage(id, stage); } catch (e) { this.setState({ err: e.message }); }
+    this.load();
+  }
+
+  async recycle(id) {
+    this.setState(s => ({
+      deals: s.deals.map(d => d.id === id ? { ...d, stage: "Lead", reason: null, date: null, recall: null } : d),
+      view: "funnel",
+    }));
+    try { await window.CRM.setStage(id, "Lead"); } catch (e) { this.setState({ err: e.message }); }
+    this.load();
+  }
+
+  setField(k, v) { this.setState(s => ({ form: { ...s.form, [k]: v } })); }
+
+  async saveProject() {
+    const f = this.state.form;
+    if (!f.title.trim()) return this.setState({ modalMsg: "Informe o nome do projeto.", modalErr: true });
+    this.setState({ saving: true, modalMsg: "Salvando…", modalErr: false });
+    try {
+      await window.CRM.createProject(f);
+      this.setState({ saving: false, modalOpen: false, modalMsg: "", form: { ...EMPTY_FORM } });
+      this.load();
+    } catch (e) {
+      this.setState({ saving: false, modalMsg: e.message, modalErr: true });
+    }
   }
 
   renderVals() {
-    const v = this.state.view, deals = this.state.deals;
+    const v = this.state.view;
+    const q = this.state.query.trim().toLowerCase();
+    const deals = q
+      ? this.state.deals.filter(d => (d.name + " " + d.city + " " + d.owner).toLowerCase().includes(q))
+      : this.state.deals;
+
     const at = s => deals.filter(d => d.stage === s);
     const closed = at("Fechado"), lostList = at("Perdido");
     const sum = arr => arr.reduce((t, d) => t + d.value, 0);
     const closedTotal = sum(closed);
-    const activeCount = deals.filter(d => !["Fechado", "Perdido"].includes(d.stage)).length;
+    const active = deals.filter(d => !["Fechado", "Perdido"].includes(d.stage));
 
-    const FULL = { "Rafael M.": "Rafael Mendes", "Diego S.": "Diego Souza", "Bruna R.": "Bruna Rocha", "Ana L.": "Ana Lima" };
-    const rateOf = () => [0.05, "5%"];
+    /* ------------------------------------------------------- comissões 5% */
     const commRows = Object.entries(closed.reduce((acc, d) => {
-      const k = FULL[d.owner] || d.owner;
-      acc[k] = acc[k] || { n: 0, rev: 0 };
-      acc[k].n++; acc[k].rev += d.value;
+      acc[d.owner] = acc[d.owner] || { n: 0, rev: 0 };
+      acc[d.owner].n++; acc[d.owner].rev += d.value;
       return acc;
-    }, {})).map(([name, o]) => {
-      const [rate, label] = rateOf();
-      return [name, o.n, o.rev, label, o.rev * rate, o.n >= 2 ? "Aprovado" : "Em análise"];
-    }).sort((a, b) => b[2] - a[2]);
+    }, {})).map(([name, o]) => [name, o.n, o.rev, o.rev * 0.05, o.n >= 2 ? "Aprovado" : "Em análise"])
+      .sort((a, b) => b[2] - a[2]);
+
+    /* ----------------------------------------------------------- agregados */
+    const byKey = (arr, key) => arr.reduce((m, d) => { const k = d[key] || "—"; m[k] = (m[k] || 0) + d.value; return m; }, {});
+    const pctList = (obj) => {
+      const tot = Object.values(obj).reduce((a, b) => a + b, 0) || 1;
+      return Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, 5)
+        .map(([name, val]) => [name, Math.round(val / tot * 100)]);
+    };
+    const srcList = pctList(byKey(deals, "source"));
+    const regionList = Object.entries(byKey(closed, "city")).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const reasonCount = lostList.reduce((m, d) => { const k = d.reason || "Não informado"; m[k] = (m[k] || 0) + 1; return m; }, {});
+    const reasonList = Object.entries(reasonCount).sort((a, b) => b[1] - a[1])
+      .map(([name, n]) => [name, Math.round(n / (lostList.length || 1) * 100)]);
 
     const meta = {
-      dash: ["Dashboard", "Visão geral do mês · agosto 2026"],
+      dash: ["Dashboard", "Visão geral dos seus projetos"],
       funnel: ["Funil de projetos", "Use as ações do card para mover o projeto de etapa"],
       clients: ["Clientes", "Projetos fechados consolidados na ficha do cliente"],
       lost: ["Perdidos", "Projetos perdidos disponíveis para reciclagem"],
-      comm: ["Comissionamento", "5% do valor de cada projeto fechado · agosto 2026"],
+      comm: ["Comissionamento", "5% do valor de cada projeto fechado"],
       reports: ["Relatórios", "Indicadores comerciais e de execução de projetos"],
     };
 
-    const nav = [["dash", "Dashboard", ""], ["funnel", "Funil", deals.filter(d => !["Fechado", "Perdido"].includes(d.stage)).length],
-      ["clients", "Clientes", closed.length], ["lost", "Perdidos", lostList.length],
-      ["comm", "Comissionamento", ""], ["reports", "Relatórios", ""]]
-      .map(([id, label, badge]) => ({
+    const nav = [["dash", "Dashboard", "", P.grid], ["funnel", "Funil", active.length, P.funnel],
+      ["clients", "Clientes", closed.length, P.users], ["lost", "Perdidos", lostList.length, P.recycle],
+      ["comm", "Comissionamento", "", P.percent], ["reports", "Relatórios", "", P.chart]]
+      .map(([id, label, badge, icon]) => ({
         label, badge: badge === "" ? "" : String(badge),
         go: () => this.setState({ view: id }),
+        iconStyle: ico(icon, 15),
         badgeStyle: `font-size:10.5px;color:${v === id ? "var(--text3)" : "var(--faint)"}`,
         style: `display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;font-family:inherit;font-size:13px;padding:8px 9px;border-radius:8px;border:0;cursor:pointer;${
           v === id ? "background:var(--soft);color:var(--text);font-weight:600;box-shadow:inset 2px 0 0 var(--accent)" : "background:transparent;color:var(--text3);font-weight:400"}`,
@@ -390,84 +521,116 @@ class Component extends DCLogic {
         lineStyle: `height:2px;border-radius:99px;background:${name === "Perdido" ? "var(--line2)" : "linear-gradient(90deg,var(--accent),var(--accent2))"};opacity:${name === "Perdido" ? 1 : 1 - i * 0.13};box-shadow:${name === "Perdido" ? "none" : "var(--glow)"}`,
         cards: cards.map(c => ({
           name: c.name, value: brl(c.value), owner: c.owner, reason: c.reason,
+          ownerIconStyle: ico(P.user, 11),
           actions: (name === "Perdido"
             ? [["Reciclar", () => this.recycle(c.id)]]
             : name === "Fechado"
               ? [["Ver cliente", () => this.setState({ view: "clients" })]]
               : [["Avançar", () => this.move(c.id, nextOf(name))], ["Perdi", () => this.move(c.id, "Perdido")]]
           ).map(([label, go]) => ({ label, go,
-            style: "font-family:inherit;font-size:11px;font-weight:500;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer" })),
+            iconStyle: ico({ "Avançar": P.arrow, "Perdi": P.x, "Reciclar": P.recycle, "Ver cliente": P.user }[label] || P.arrow, 12),
+            style: "display:inline-flex;align-items:center;gap:5px;font-family:inherit;font-size:11px;font-weight:500;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer" })),
         })),
       };
     });
 
-    const stageChip = s => s === "Ativo" ? chip("var(--okBg)", "var(--okFg)") : chip("var(--accSoft)", "var(--accFg)");
+    const banner = this.state.err ? this.state.err : (this.state.loading ? "Carregando projetos…" : "");
 
     return {
       nav, stages,
       title: meta[v][0], subtitle: meta[v][1],
       isDash: v === "dash", isFunnel: v === "funnel", isClients: v === "clients",
       isLost: v === "lost", isComm: v === "comm", isReports: v === "reports",
+
+      banner,
+      bannerStyle: `font-size:12.5px;padding:11px 15px;border-radius:9px;border:1px solid ${this.state.err ? "var(--badFg)" : "var(--line)"};background:${this.state.err ? "var(--badBg)" : "var(--soft)"};color:${this.state.err ? "var(--badFg)" : "var(--muted)"}`,
+
+      query: this.state.query,
+      setQuery: (e) => this.setState({ query: e.target.value }),
+
+      /* ------------------------------------------------------------ modal */
+      modalOpen: this.state.modalOpen,
+      openModal: () => this.setState({ modalOpen: true, modalMsg: "" }),
+      closeModal: () => this.setState({ modalOpen: false, modalMsg: "" }),
+      saveProject: () => this.saveProject(),
+      saveLabel: this.state.saving ? "Salvando…" : "Criar projeto",
+      modalMsg: this.state.modalMsg,
+      modalMsgStyle: `font-size:12px;min-height:16px;color:${this.state.modalErr ? "var(--badFg)" : "var(--muted)"}`,
+      formFields: [
+        ["title", "Nome do projeto *", "Ex.: Usina 30 kWp — Padaria X", "full"],
+        ["clientName", "Cliente", "Nome ou razão social"],
+        ["kind", "Tipo de cliente", null, null, ["Residencial", "Empresa", "Rural", "Condomínio", "Poder público"]],
+        ["doc", "CPF / CNPJ", "Somente números"],
+        ["value", "Valor do projeto (R$)", "62000"],
+        ["city", "Cidade", "Campinas"],
+        ["uf", "UF", "SP"],
+        ["source", "Origem", null, null, ["Indicação", "Google Ads", "Feira / eventos", "Instagram", "Porta a porta"]],
+      ].map(([key, label, placeholder, span, options]) => ({
+        label, placeholder: placeholder || "", value: this.state.form[key],
+        isSelect: !!options, isText: !options,
+        wrapStyle: span === "full" ? "grid-column:1 / -1" : "",
+        options: (options || []).map(o => ({ value: o, label: o, selected: this.state.form[key] === o })),
+        set: (e) => this.setField(key, e.target.value),
+      })),
+
       goalStyle: `width:${Math.min(100, Math.round(closedTotal / 18000))}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:var(--glow)`,
       goalLabel: compact(closedTotal) + " de R$ 1,80 M",
 
       clients: closed.map(c => ({
         name: c.name, type: c.type, city: c.city, value: brl(c.value),
-        stage: "Ativo", stageStyle: stageChip("Ativo"), owner: c.owner })),
+        stage: "Ativo", stageStyle: chip("var(--okBg)", "var(--okFg)"), owner: c.owner })),
+      clientsEmpty: closed.length === 0,
       clientCount: closed.length, clientTotal: compact(closedTotal),
 
       lost: lostList.map(l => ({
-        name: l.name, owner: l.owner, value: brl(l.value), reason: l.reason,
-        date: l.date || "Agora", recall: l.recall || "A definir",
+        name: l.name, owner: l.owner, value: brl(l.value), reason: l.reason || "Não informado",
+        date: l.date || "—", recall: l.recall || "A definir",
+        recycleIconStyle: ico(P.recycle, 12),
         recycle: () => this.recycle(l.id) })),
       lostEmpty: lostList.length === 0,
       lostKpis: [
         { label: "Projetos em reciclagem", value: String(lostList.length) },
         { label: "Valor recuperável", value: compact(sum(lostList)) },
-        { label: "Retomadas em 90 dias", value: "3" },
+        { label: "Ticket médio perdido", value: lostList.length ? compact(Math.round(sum(lostList) / lostList.length)) : "R$ 0 K" },
       ],
-      lostReasons: [["Preço acima do orçamento", 38], ["Optou por concorrente", 27], ["Sem crédito aprovado", 21], ["Postergou o projeto", 14]]
-        .map(([name, p]) => ({ name, pct: p + "%", barStyle: `width:${p * 2.6}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))` })),
+      lostReasons: reasonList.map(([name, p]) => ({ name, pct: p + "%",
+        barStyle: `width:${p}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))` })),
 
       kpis: [
-        ["Projetos fechados no mês", compact(closedTotal), "▲ 18,4% vs. julho", 1],
-        ["Pipeline ativo", compact(sum(deals.filter(d => !["Fechado", "Perdido"].includes(d.stage)))), activeCount + " projetos em andamento", 0],
-        ["Projetos fechados", String(closed.length), "▲ 11,2% vs. julho", 1],
-        ["Taxa de fechamento", "22,4%", "▼ 1,8 p.p. vs. julho", -1],
-      ].map(([label, value, delta, dir]) => ({ label, value, delta,
+        ["Projetos fechados", compact(closedTotal), closed.length + " no total", 1, P.money],
+        ["Pipeline ativo", compact(sum(active)), active.length + " projetos em andamento", 0, P.layers],
+        ["Projetos perdidos", String(lostList.length), compact(sum(lostList)) + " recuperáveis", -1, P.check],
+        ["Taxa de fechamento", deals.length ? Math.round(closed.length / deals.length * 100) + "%" : "0%", "Fechados sobre o total", 0, P.target],
+      ].map(([label, value, delta, dir, icon]) => ({ label, value, delta, iconStyle: ico(icon, 13),
         deltaStyle: `font-size:11.5px;color:${dir === 1 ? "var(--okFg)" : dir === -1 ? "var(--badFg)" : "var(--muted2)"}` })),
 
-      bars: [["Jan", 52], ["Fev", 61], ["Mar", 48], ["Abr", 74], ["Mai", 83], ["Jun", 69], ["Jul", 91], ["Ago", 100], ["Set", 34]]
-        .map(([m, h]) => ({ m, style: `width:100%;max-width:26px;height:${h}%;background:${h === 100 ? "linear-gradient(180deg,var(--accent),var(--accent2))" : "var(--bar)"};border-radius:3px 3px 0 0;box-shadow:${h === 100 ? "var(--glow)" : "none"}` })),
+      bars: (() => {
+        const max = Math.max(...STAGES.map(s => sum(at(s))), 1);
+        return STAGES.map(s => ({ m: s.slice(0, 5), style: `width:100%;max-width:26px;height:${Math.max(3, Math.round(sum(at(s)) / max * 100))}%;background:${s === "Fechado" ? "linear-gradient(180deg,var(--accent),var(--accent2))" : "var(--bar)"};border-radius:3px 3px 0 0;box-shadow:${s === "Fechado" ? "var(--glow)" : "none"}` }));
+      })(),
 
-      sources: [["Indicação", 34], ["Google Ads", 26], ["Feira / eventos", 16], ["Instagram", 14], ["Porta a porta", 10]]
-        .map(([name, p]) => ({ name, pct: p + "%", barStyle: `width:${p * 2.6}%;height:100%;background:${p > 25 ? "linear-gradient(90deg,var(--accent),var(--accent2))" : "var(--bar2)"};box-shadow:${p > 25 ? "var(--glow)" : "none"}` })),
+      sources: srcList.map(([name, p]) => ({ name, pct: p + "%",
+        barStyle: `width:${p}%;height:100%;background:${p > 25 ? "linear-gradient(90deg,var(--accent),var(--accent2))" : "var(--bar2)"};box-shadow:${p > 25 ? "var(--glow)" : "none"}` })),
 
       agenda: [
-        { when: "Ter · 09h00", title: "Visita técnica — Fazenda Santa Rita", who: "Equipe A · Uberaba/MG" },
-        { when: "Qua · 14h30", title: "Homologação CPFL — Auto Posto Cruzeiro", who: "Eng. Paulo · protocolo #4412" },
-        { when: "Sex · 08h00", title: "Início de instalação — Clínica Vitalis", who: "Equipe C · projeto #2291" },
+        { when: "Próximas visitas", iconStyle: ico(P.pin, 12), title: active.length + " projetos ativos", who: "Acompanhe pelo funil" },
+        { when: "Homologações", iconStyle: ico(P.file, 12), title: closed.length + " projetos fechados", who: "Consolidados na ficha do cliente" },
+        { when: "Reciclagem", iconStyle: ico(P.bolt, 12), title: lostList.length + " leads a retomar", who: compact(sum(lostList)) + " em valor recuperável" },
       ],
 
       dark: this.state.dark,
-      themeLabel: this.state.dark ? "Tema escuro" : "Tema claro",
+      themeLabel: this.state.dark ? "Mudar para tema claro" : "Mudar para tema escuro",
       toggleTheme: () => this.setState(s => ({ dark: !s.dark })),
-      themeSwitchStyle: `width:28px;height:16px;border-radius:99px;background:${this.state.dark ? "linear-gradient(90deg,var(--accent),var(--accent2))" : "var(--bar2)"};display:flex;align-items:center;padding:2px;justify-content:${this.state.dark ? "flex-end" : "flex-start"};transition:.18s`,
-      themeKnobStyle: "width:12px;height:12px;border-radius:99px;background:var(--surface);display:block",
+      themeIconStyle: ico(this.state.dark ? P.sun : P.moon, 16),
+      searchIconStyle: ico(P.search, 14) + ";position:absolute;left:11px;color:var(--muted2);pointer-events:none",
+      plusIconStyle: ico(P.plus, 13),
+
+      commEmpty: commRows.length === 0,
       commRevenue: compact(commRows.reduce((t, r) => t + r[2], 0)),
-      commTotal: brl(Math.round(commRows.reduce((t, r) => t + r[4], 0))),
-      commissions: commRows.length ? commRows.map(r => [r[0], r[1], brl(r[2]), r[3], brl(Math.round(r[4])), r[5]]).map(([name, deals, revenue, rate, commission, status]) => ({
-        name, deals, revenue, rate, commission, status,
-        statusStyle: (status === "Aprovado" ? chip("var(--okBg)", "var(--okFg)") : status === "Retido" ? chip("var(--badBg)", "var(--badFg)") : chip("var(--warnBg)", "var(--warnFg)")) + ";white-space:nowrap" })) : [
-        ["Rafael Mendes", 7, "R$ 428.000", "4,2%", "R$ 17.976", "Aprovado"],
-        ["Diego Souza", 6, "R$ 351.400", "3,8%", "R$ 13.353", "Aprovado"],
-        ["Bruna Rocha", 5, "R$ 298.100", "3,5%", "R$ 10.433", "Em análise"],
-        ["Ana Lima", 4, "R$ 201.900", "3,0%", "R$ 6.057", "Aprovado"],
-        ["Thiago Nunes", 2, "R$ 89.500", "3,0%", "R$ 2.685", "Em análise"],
-        ["Carla Dias", 1, "R$ 50.000", "1,5%", "R$ 736", "Retido"],
-      ].map(([name, deals, revenue, rate, commission, status]) => ({
-        name, deals, revenue, rate, commission, status,
-        statusStyle: (status === "Aprovado" ? chip("var(--okBg)", "var(--okFg)") : status === "Retido" ? chip("var(--badBg)", "var(--badFg)") : chip("var(--warnBg)", "var(--warnFg)")) + ";white-space:nowrap" })),
+      commTotal: brl(Math.round(commRows.reduce((t, r) => t + r[3], 0))),
+      commissions: commRows.map(([name, n, rev, amount, status]) => ({
+        name, deals: n, revenue: brl(rev), commission: brl(Math.round(amount)), status,
+        statusStyle: (status === "Aprovado" ? chip("var(--okBg)", "var(--okFg)") : chip("var(--warnBg)", "var(--warnFg)")) + ";white-space:nowrap" })),
 
       tiers: [
         { name: "Comissão do projeto", range: "5% sobre o valor total do projeto", rate: "5%" },
@@ -476,21 +639,27 @@ class Component extends DCLogic {
         { name: "Retenção", range: "projeto cancelado no período", rate: "0%" },
       ],
 
-      conv: [["Lead → Qualif.", 67, "67%"], ["Qualif. → Proposta", 54, "54%"], ["Proposta → Negoc.", 41, "41%"], ["Negoc. → Fechado", 58, "58%"], ["Lead → Fechado", 22, "22%"]]
-        .map(([name, p, value]) => ({ name, value, barStyle: `width:${p}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:var(--glow)` })),
+      conv: (() => {
+        const n = s => at(s).length;
+        const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+        const tot = deals.length;
+        return [
+          ["Lead → Qualif.", pct(n("Qualificado"), n("Lead") + n("Qualificado"))],
+          ["Qualif. → Proposta", pct(n("Proposta"), n("Qualificado") + n("Proposta"))],
+          ["Proposta → Negoc.", pct(n("Negociação"), n("Proposta") + n("Negociação"))],
+          ["Negoc. → Fechado", pct(n("Fechado"), n("Negociação") + n("Fechado"))],
+          ["Total → Fechado", pct(n("Fechado"), tot)],
+        ].map(([name, p]) => ({ name, value: p + "%",
+          barStyle: `width:${p}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:var(--glow)` }));
+      })(),
 
-      regions: [
-        { name: "Campinas e região", value: "R$ 1,28 M" },
-        { name: "Interior SP", value: "R$ 902 K" },
-        { name: "Triângulo Mineiro", value: "R$ 744 K" },
-        { name: "Litoral norte", value: "R$ 571 K" },
-        { name: "Grande SP", value: "R$ 448 K" },
-      ],
+      regions: regionList.map(([name, val]) => ({ name, value: compact(val) })),
+      regionsEmpty: regionList.length === 0,
 
       reportCards: [
-        { label: "Prazo médio de execução", value: "38 dias", note: "Da assinatura à entrega do projeto" },
-        { label: "CAC", value: "R$ 1.940", note: "Queda de 8% com indicações" },
-        { label: "Recuperação de perdidos", value: "12%", note: "Projetos reciclados que voltaram ao funil" },
+        { label: "Ticket médio", value: closed.length ? compact(Math.round(closedTotal / closed.length)) : "R$ 0 K", note: "Média dos projetos fechados" },
+        { label: "Valor em negociação", value: compact(sum(active)), note: active.length + " projetos no funil" },
+        { label: "Comissão apurada", value: brl(Math.round(closedTotal * 0.05)), note: "5% sobre os fechados" },
       ],
     };
   }
