@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM Painéis Solares</title>
+<script src="./config.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *{box-sizing:border-box}
+  :root{--bg:#FAFAF8;--surface:#ffffff;--hover:#FDFCF9;--line:#E8E8E4;--line2:#D2D2CC;--soft:#F3F3EF;--bar:#E6E6E1;--bar2:#C8C8C2;--text:#16181A;--textHover:#2E3135;--text2:#3A3D42;--text3:#5C5F64;--muted:#86898E;--muted2:#9A9DA2;--faint:#B2B5B9;--accent:#F59300;--accent2:#FF6A00;--glow:0 0 0 1px rgba(245,147,0,.30);--accSoft:#FFF6E6;--accSoft2:#FFEECC;--accLine:#F3D6A0;--accFg:#9A4A05;--okBg:#EDF6F0;--okFg:#28794A;--badBg:#FCEEEC;--badFg:#A63A31;--warnBg:#FBF3E2;--warnFg:#7C6522}
+  :root[data-theme="dark"]{--bg:#131313;--surface:#1A1A1A;--hover:#212121;--line:#2C2C2C;--line2:#3D3D3D;--soft:#242424;--bar:#2E2E2E;--bar2:#454545;--text:#F2F2F0;--textHover:#DADAD6;--text2:#C6C6C2;--text3:#9C9C98;--muted:#8A8A86;--muted2:#757571;--faint:#5A5A57;--accent:#FFB300;--accent2:#FF7A18;--glow:0 0 24px rgba(255,140,0,.22);--accSoft:#241A08;--accSoft2:#2E2109;--accLine:#4B3410;--accFg:#FFC24D;--okBg:#122016;--okFg:#57D68C;--badBg:#241413;--badFg:#FF8A7A;--warnBg:#241D0C;--warnFg:#FFD37A}
+  body{margin:0;background:var(--bg);font-family:'Inter Tight',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:var(--text)}
+  a{color:var(--accFg);text-decoration:none}
+  a:hover{color:var(--accFg)}
+  ::-webkit-scrollbar{width:7px;height:7px}
+  ::-webkit-scrollbar-thumb{background:#DFDFD9;border-radius:8px}
+</style>
+</helmet>
+<div style="display:grid;grid-template-columns:212px 1fr;min-height:100vh">
+  <aside style="border-right:1px solid var(--line);padding:24px 14px;display:flex;flex-direction:column;gap:28px;position:sticky;top:0;height:100vh;background:var(--bg)">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 8px">
+      <div style="width:9px;height:9px;border-radius:99px;background:linear-gradient(140deg,var(--accent),var(--accent2));box-shadow:var(--glow)"></div>
+      <div style="font-size:14px;font-weight:600;letter-spacing:-.2px">Helios Solar</div>
+    </div>
+    <nav style="display:flex;flex-direction:column;gap:2px">
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="6">
+        <button onClick="{{ item.go }}" style="{{ item.style }}" style-hover="background:var(--soft)">
+          <span>{{ item.label }}</span>
+          <span style="{{ item.badgeStyle }}">{{ item.badge }}</span>
+        </button>
+      </sc-for>
+    </nav>
+    <button onClick="{{ toggleTheme }}" style="margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:inherit;font-size:12.5px;color:var(--text3);background:transparent;border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer" style-hover="background:var(--soft)">
+      <span>{{ themeLabel }}</span>
+      <span style="{{ themeSwitchStyle }}"><i style="{{ themeKnobStyle }}"></i></span>
+    </button>
+    <div style="padding:0 8px;display:flex;flex-direction:column;gap:7px">
+      <div style="font-size:11px;color:var(--muted)">Meta do mês</div>
+      <div style="height:3px;background:var(--line);border-radius:99px;overflow:hidden"><div style="{{ goalStyle }}"></div></div>
+      <div style="font-size:11.5px;color:var(--text3)">{{ goalLabel }}</div>
+    </div>
+  </aside>
+
+  <main style="padding:34px 40px 60px;display:flex;flex-direction:column;gap:26px;min-width:0">
+    <header style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      <div>
+        <h1 style="font-size:23px;font-weight:600;margin:0;letter-spacing:-.5px">{{ title }}</h1>
+        <div style="font-size:12.5px;color:var(--muted);margin-top:5px">{{ subtitle }}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input placeholder="Buscar" style="border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none;width:180px" />
+        <button style="background:linear-gradient(140deg,var(--accent),var(--accent2));border:0;color:#1A1206;font-weight:600;font-size:12.5px;padding:9px 15px;border-radius:8px;font-family:inherit;cursor:pointer;box-shadow:var(--glow)" style-hover="filter:brightness(1.08)">Novo projeto</button>
+      </div>
+    </header>
+
+    <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:26px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+          <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+            <div style="background:var(--surface);padding:20px 22px">
+              <div style="font-size:11.5px;color:var(--muted)">{{ k.label }}</div>
+              <div style="font-size:24px;font-weight:600;margin:8px 0 5px;letter-spacing:-.7px">{{ k.value }}</div>
+              <div style="{{ k.deltaStyle }}">{{ k.delta }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:24px;align-items:start">
+          <section>
+            <div style="font-size:13px;font-weight:600;margin-bottom:18px">Projetos fechados por mês</div>
+            <div style="display:grid;grid-template-columns:repeat(9,1fr);gap:12px;align-items:end;height:170px">
+              <sc-for list="{{ bars }}" as="b" hint-placeholder-count="9">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:9px;height:100%;justify-content:flex-end">
+                  <div style="{{ b.style }}"></div>
+                  <div style="font-size:10.5px;color:var(--muted2)">{{ b.m }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+          <section>
+            <div style="font-size:13px;font-weight:600;margin-bottom:18px">Origem dos leads</div>
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <sc-for list="{{ sources }}" as="s" hint-placeholder-count="5">
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text2)">{{ s.name }}</span><span style="color:var(--muted2)">{{ s.pct }}</span></div>
+                  <div style="height:2px;background:var(--line)"><div style="{{ s.barStyle }}"></div></div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </div>
+
+        <section>
+          <div style="font-size:13px;font-weight:600;margin-bottom:14px">Agenda técnica</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+            <sc-for list="{{ agenda }}" as="a" hint-placeholder-count="3">
+              <div style="background:var(--surface);padding:18px 20px">
+                <div style="font-size:11px;color:var(--muted2)">{{ a.when }}</div>
+                <div style="font-size:13px;font-weight:500;margin:6px 0 4px">{{ a.title }}</div>
+                <div style="font-size:11.5px;color:var(--muted)">{{ a.who }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isFunnel }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:22px">
+        <div style="display:grid;grid-template-columns:repeat(6,minmax(160px,1fr));gap:14px;align-items:start;overflow-x:auto;padding-bottom:6px">
+          <sc-for list="{{ stages }}" as="st" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;gap:10px;min-height:400px">
+              <div style="display:flex;flex-direction:column;gap:6px;padding-bottom:9px;border-bottom:1px solid var(--line)">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div style="font-size:12.5px;font-weight:600;color:var(--text2)">{{ st.name }}</div>
+                  <div style="font-size:11px;color:var(--muted2)">{{ st.count }}</div>
+                </div>
+                <div style="font-size:11px;color:var(--muted2)">{{ st.total }}</div>
+                <div style="{{ st.lineStyle }}"></div>
+              </div>
+              <sc-for list="{{ st.cards }}" as="c" hint-placeholder-count="3">
+                <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px" style-hover="border-color:var(--line2)">
+                  <div style="font-size:12.5px;font-weight:500;line-height:1.35">{{ c.name }}</div>
+                  <div style="font-size:13px;font-weight:600;color:var(--text);margin-top:8px">{{ c.value }}</div>
+                  <div style="font-size:10.5px;color:var(--muted2);margin-top:8px">{{ c.owner }}</div>
+                  <sc-if value="{{ c.reason }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:10.5px;color:var(--accFg);margin-top:6px">{{ c.reason }}</div>
+                  </sc-if>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+                    <sc-for list="{{ c.actions }}" as="a" hint-placeholder-count="2">
+                      <button onClick="{{ a.go }}" style="{{ a.style }}" style-hover="background:var(--soft)">{{ a.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ st.empty }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:11.5px;color:var(--faint);padding:14px 2px">Sem projetos nesta etapa</div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted2);border-top:1px solid var(--line);padding-top:14px">Ao mover para <b style="font-weight:600;color:var(--text2)">Fechado</b>, o projeto é consolidado na ficha do cliente e entra na apuração de comissão (5%). Em <b style="font-weight:600;color:var(--text2)">Perdido</b>, vai para a reciclagem de leads.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isClients }}" hint-placeholder-val="{{ false }}">
+      <section style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)">
+        <div style="display:grid;grid-template-columns:1.9fr 1.1fr 1fr .9fr .9fr;gap:12px;font-size:11px;color:var(--muted2);padding:13px 20px;border-bottom:1px solid var(--line)">
+          <div>Cliente</div><div>Cidade / UF</div><div>Valor do projeto</div><div>Situação</div><div>Responsável</div>
+        </div>
+        <sc-for list="{{ clients }}" as="c" hint-placeholder-count="7">
+          <div style="display:grid;grid-template-columns:1.9fr 1.1fr 1fr .9fr .9fr;gap:12px;align-items:center;padding:15px 20px;border-bottom:1px solid var(--soft);font-size:12.5px" style-hover="background:var(--hover)">
+            <div>
+              <div style="font-weight:500">{{ c.name }}</div>
+              <div style="font-size:11px;color:var(--muted2);margin-top:2px">{{ c.type }}</div>
+            </div>
+            <div style="color:var(--text3)">{{ c.city }}</div>
+            <div style="font-weight:500">{{ c.value }}</div>
+            <div><span style="{{ c.stageStyle }}">{{ c.stage }}</span></div>
+            <div style="color:var(--text3)">{{ c.owner }}</div>
+          </div>
+        </sc-for>
+        <div style="padding:14px 20px;font-size:11.5px;color:var(--muted2);display:flex;gap:26px">
+          <span>{{ clientCount }} clientes</span><span>Valor total dos projetos {{ clientTotal }}</span>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ isLost }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+          <sc-for list="{{ lostKpis }}" as="k" hint-placeholder-count="3">
+            <div style="background:var(--surface);padding:20px 22px">
+              <div style="font-size:11.5px;color:var(--muted)">{{ k.label }}</div>
+              <div style="font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.6px">{{ k.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <section style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)">
+          <div style="display:grid;grid-template-columns:1.6fr .9fr 1.2fr .8fr .9fr 1fr;gap:12px;font-size:11px;color:var(--muted2);padding:13px 20px;border-bottom:1px solid var(--line)">
+            <div>Projeto perdido</div><div>Valor</div><div>Motivo</div><div>Perdida em</div><div>Retomar</div><div></div>
+          </div>
+          <sc-for list="{{ lost }}" as="l" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:1.6fr .9fr 1.2fr .8fr .9fr 1fr;gap:12px;align-items:center;padding:15px 20px;border-bottom:1px solid var(--soft);font-size:12.5px" style-hover="background:var(--hover)">
+              <div><div style="font-weight:500">{{ l.name }}</div><div style="font-size:11px;color:var(--muted2);margin-top:2px">{{ l.owner }}</div></div>
+              <div style="font-weight:500">{{ l.value }}</div>
+              <div style="color:var(--text3)">{{ l.reason }}</div>
+              <div style="color:var(--muted2)">{{ l.date }}</div>
+              <div style="color:var(--text3)">{{ l.recall }}</div>
+              <div style="display:flex;gap:7px;justify-content:flex-end">
+                <button onClick="{{ l.recycle }}" style="font-family:inherit;font-size:11.5px;font-weight:500;padding:7px 12px;border-radius:7px;border:1px solid var(--accLine);background:var(--accSoft);color:var(--accFg);cursor:pointer" style-hover="background:var(--accSoft2)">Reciclar lead</button>
+                <button style="font-family:inherit;font-size:11.5px;padding:7px 11px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer" style-hover="background:var(--soft)">Arquivar</button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ lostEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:26px 20px;font-size:12.5px;color:var(--faint)">Nenhuma lead na reciclagem.</div>
+          </sc-if>
+        </section>
+        <section>
+          <div style="font-size:13px;font-weight:600;margin-bottom:14px">Principais motivos de perda</div>
+          <div style="display:flex;flex-direction:column;gap:12px;max-width:520px">
+            <sc-for list="{{ lostReasons }}" as="r" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="width:180px;font-size:12.5px;color:var(--text2)">{{ r.name }}</div>
+                <div style="flex:1;height:2px;background:var(--line)"><div style="{{ r.barStyle }}"></div></div>
+                <div style="width:40px;text-align:right;font-size:12px;color:var(--muted)">{{ r.pct }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isComm }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:26px">
+        <section style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);min-width:0">
+          <div style="display:grid;grid-template-columns:minmax(0,1.6fr) 56px minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,1fr);gap:14px;font-size:11px;color:var(--muted2);padding:13px 20px;border-bottom:1px solid var(--line)">
+            <div>Responsável</div><div>Proj.</div><div>Valor dos projetos</div><div>Comissão (5%)</div><div>Status</div>
+          </div>
+          <sc-for list="{{ commissions }}" as="r" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:minmax(0,1.6fr) 56px minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,1fr);gap:14px;align-items:center;padding:15px 20px;border-bottom:1px solid var(--soft);font-size:12.5px" style-hover="background:var(--hover)">
+              <div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</div>
+              <div style="color:var(--text3)">{{ r.deals }}</div>
+              <div style="color:var(--text3);white-space:nowrap">{{ r.revenue }}</div>
+              <div style="font-weight:600;white-space:nowrap">{{ r.commission }}</div>
+              <div><span style="{{ r.statusStyle }}">{{ r.status }}</span></div>
+            </div>
+          </sc-for>
+          <div style="display:flex;gap:28px;padding:15px 20px;font-size:11.5px;color:var(--muted2);white-space:nowrap">
+            <span>Valor dos projetos <b style="color:var(--text);font-weight:600">{{ commRevenue }}</b></span>
+            <span>Total comissões <b style="color:var(--text);font-weight:600">{{ commTotal }}</b></span>
+          </div>
+        </section>
+        <section style="display:flex;flex-direction:column;gap:14px">
+          <div style="font-size:13px;font-weight:600">Regra de comissionamento</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+          <sc-for list="{{ tiers }}" as="t" hint-placeholder-count="4">
+            <div style="background:var(--surface);padding:18px 20px">
+              <div style="font-size:22px;font-weight:600;letter-spacing:-.6px;background:linear-gradient(140deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent">{{ t.rate }}</div>
+              <div style="font-size:12.5px;font-weight:500;margin-top:7px">{{ t.name }}</div>
+              <div style="font-size:11.5px;color:var(--muted2);margin-top:3px;line-height:1.45">{{ t.range }}</div>
+            </div>
+          </sc-for>
+          </div>
+          <button style="align-self:flex-start;background:linear-gradient(140deg,var(--accent),var(--accent2));border:0;color:#1A1206;font-family:inherit;font-size:12.5px;font-weight:600;padding:11px 18px;border-radius:8px;cursor:pointer;box-shadow:var(--glow)" style-hover="filter:brightness(1.08)">Fechar folha do mês</button>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReports }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:28px">
+        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start">
+          <section>
+            <div style="font-size:13px;font-weight:600;margin-bottom:18px">Conversão por etapa</div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <sc-for list="{{ conv }}" as="c" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:14px">
+                  <div style="width:132px;font-size:12.5px;color:var(--text2)">{{ c.name }}</div>
+                  <div style="flex:1;height:2px;background:var(--line)"><div style="{{ c.barStyle }}"></div></div>
+                  <div style="width:44px;text-align:right;font-size:12.5px;font-weight:500">{{ c.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+          <section>
+            <div style="font-size:13px;font-weight:600;margin-bottom:18px">Desempenho por região</div>
+            <div style="display:flex;flex-direction:column;gap:0">
+              <sc-for list="{{ regions }}" as="r" hint-placeholder-count="5">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;border-bottom:1px solid var(--line);padding:11px 0">
+                  <span style="color:var(--text2)">{{ r.name }}</span>
+                  <b style="font-weight:600">{{ r.value }}</b>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+          <sc-for list="{{ reportCards }}" as="r" hint-placeholder-count="3">
+            <div style="background:var(--surface);padding:20px 22px">
+              <div style="font-size:11.5px;color:var(--muted)">{{ r.label }}</div>
+              <div style="font-size:24px;font-weight:600;margin:8px 0 5px;letter-spacing:-.7px">{{ r.value }}</div>
+              <div style="font-size:11.5px;color:var(--muted)">{{ r.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
+const ACC = "var(--accent)";
+const kwp = n => n.toLocaleString("pt-BR") + " kWp";
+const brl = n => "R$ " + n.toLocaleString("pt-BR");
+const compact = n => n >= 1e6 ? "R$ " + (n / 1e6).toFixed(2).replace(".", ",") + " M" : "R$ " + Math.round(n / 1e3) + " K";
+const chip = (bg, fg) => `font-size:10.5px;font-weight:500;padding:3px 9px;border-radius:99px;background:${bg};color:${fg}`;
+const STAGES = ["Lead", "Qualificado", "Proposta", "Negociação", "Fechado", "Perdido"];
+const REASONS = ["Preço acima do orçamento", "Optou por concorrente", "Sem crédito aprovado", "Postergou o projeto"];
+
+const DEALS = [
+  [1, "Padaria Pão Quente", "Empresa · CNPJ", "Campinas / SP", 18, 62000, "Lead", "Ana L."],
+  [2, "Marcos Vieira", "Residencial · CPF", "Valinhos / SP", 6.5, 24400, "Lead", "Ana L."],
+  [3, "Cond. Vista Sul", "Condomínio · CNPJ", "Sorocaba / SP", 54, 189000, "Lead", "Diego S."],
+  [4, "Supermercado Boa Vista", "Empresa · CNPJ", "Sorocaba / SP", 96, 312000, "Qualificado", "Diego S."],
+  [5, "Clínica Vitalis", "Empresa · CNPJ", "Jundiaí / SP", 22, 74500, "Qualificado", "Bruna R."],
+  [6, "Fazenda Santa Rita", "Rural · CNPJ", "Uberaba / MG", 140, 438000, "Proposta", "Rafael M."],
+  [7, "Escola Aprender", "Empresa · CNPJ", "Campinas / SP", 31, 104000, "Proposta", "Ana L."],
+  [8, "Metalúrgica Ferrari", "Empresa · CNPJ", "Campinas / SP", 210, 611000, "Negociação", "Rafael M."],
+  [9, "Hotel Miramar", "Empresa · CNPJ", "Ubatuba / SP", 64, 208000, "Negociação", "Diego S."],
+  [10, "Auto Posto Cruzeiro", "Empresa · CNPJ", "Ribeirão Preto / SP", 78, 251000, "Fechado", "Bruna R."],
+  [11, "Juliana Prado", "Residencial · CPF", "Valinhos / SP", 11, 39800, "Fechado", "Ana L."],
+  [12, "Ricardo Alves", "Residencial · CPF", "Indaiatuba / SP", 9, 33900, "Perdido", "Bruna R.", 0, "Jul 2026", "Set 2026"],
+  [13, "Transportadora Ipê", "Empresa · CNPJ", "Limeira / SP", 88, 274000, "Perdido", "Diego S.", 1, "Jun 2026", "Out 2026"],
+  [14, "Marina Costa", "Residencial · CPF", "Campinas / SP", 7.5, 27600, "Perdido", "Ana L.", 2, "Ago 2026", "Nov 2026"],
+  [15, "Frigorífico Serra", "Empresa · CNPJ", "Piracicaba / SP", 120, 371000, "Perdido", "Rafael M.", 3, "Mai 2026", "Jan 2027"],
+].map(([id, name, type, city, kwp, value, stage, owner, ri, date, recall]) => ({
+  id, name, type, city, kwp, value, stage, owner,
+  reason: ri === undefined ? null : REASONS[ri], date: date || null, recall: recall || null,
+}));
+
+class Component extends DCLogic {
+  state = { view: "dash", deals: DEALS, dark: false };
+
+  componentDidMount() { this.applyTheme(); }
+  componentDidUpdate() { this.applyTheme(); }
+  applyTheme() { document.documentElement.dataset.theme = this.state.dark ? "dark" : "light"; }
+
+  move(id, stage) {
+    this.setState(s => ({ deals: s.deals.map(d => d.id === id ? { ...d, stage, reason: stage === "Perdido" ? d.reason || REASONS[0] : null } : d) }));
+  }
+  recycle(id) {
+    this.setState(s => ({ deals: s.deals.map(d => d.id === id ? { ...d, stage: "Lead", reason: null, date: null, recall: null } : d) }));
+    this.setState({ view: "funnel" });
+  }
+
+  renderVals() {
+    const v = this.state.view, deals = this.state.deals;
+    const at = s => deals.filter(d => d.stage === s);
+    const closed = at("Fechado"), lostList = at("Perdido");
+    const sum = arr => arr.reduce((t, d) => t + d.value, 0);
+    const closedTotal = sum(closed);
+    const activeCount = deals.filter(d => !["Fechado", "Perdido"].includes(d.stage)).length;
+
+    const FULL = { "Rafael M.": "Rafael Mendes", "Diego S.": "Diego Souza", "Bruna R.": "Bruna Rocha", "Ana L.": "Ana Lima" };
+    const rateOf = () => [0.05, "5%"];
+    const commRows = Object.entries(closed.reduce((acc, d) => {
+      const k = FULL[d.owner] || d.owner;
+      acc[k] = acc[k] || { n: 0, rev: 0 };
+      acc[k].n++; acc[k].rev += d.value;
+      return acc;
+    }, {})).map(([name, o]) => {
+      const [rate, label] = rateOf();
+      return [name, o.n, o.rev, label, o.rev * rate, o.n >= 2 ? "Aprovado" : "Em análise"];
+    }).sort((a, b) => b[2] - a[2]);
+
+    const meta = {
+      dash: ["Dashboard", "Visão geral do mês · agosto 2026"],
+      funnel: ["Funil de projetos", "Use as ações do card para mover o projeto de etapa"],
+      clients: ["Clientes", "Projetos fechados consolidados na ficha do cliente"],
+      lost: ["Perdidos", "Projetos perdidos disponíveis para reciclagem"],
+      comm: ["Comissionamento", "5% do valor de cada projeto fechado · agosto 2026"],
+      reports: ["Relatórios", "Indicadores comerciais e de execução de projetos"],
+    };
+
+    const nav = [["dash", "Dashboard", ""], ["funnel", "Funil", deals.filter(d => !["Fechado", "Perdido"].includes(d.stage)).length],
+      ["clients", "Clientes", closed.length], ["lost", "Perdidos", lostList.length],
+      ["comm", "Comissionamento", ""], ["reports", "Relatórios", ""]]
+      .map(([id, label, badge]) => ({
+        label, badge: badge === "" ? "" : String(badge),
+        go: () => this.setState({ view: id }),
+        badgeStyle: `font-size:10.5px;color:${v === id ? "var(--text3)" : "var(--faint)"}`,
+        style: `display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;font-family:inherit;font-size:13px;padding:8px 9px;border-radius:8px;border:0;cursor:pointer;${
+          v === id ? "background:var(--soft);color:var(--text);font-weight:600;box-shadow:inset 2px 0 0 var(--accent)" : "background:transparent;color:var(--text3);font-weight:400"}`,
+      }));
+
+    const nextOf = s => STAGES[STAGES.indexOf(s) + 1];
+    const stages = STAGES.map((name, i) => {
+      const cards = at(name);
+      return {
+        name, count: cards.length, total: compact(sum(cards)), empty: cards.length === 0,
+        lineStyle: `height:2px;border-radius:99px;background:${name === "Perdido" ? "var(--line2)" : "linear-gradient(90deg,var(--accent),var(--accent2))"};opacity:${name === "Perdido" ? 1 : 1 - i * 0.13};box-shadow:${name === "Perdido" ? "none" : "var(--glow)"}`,
+        cards: cards.map(c => ({
+          name: c.name, value: brl(c.value), owner: c.owner, reason: c.reason,
+          actions: (name === "Perdido"
+            ? [["Reciclar", () => this.recycle(c.id)]]
+            : name === "Fechado"
+              ? [["Ver cliente", () => this.setState({ view: "clients" })]]
+              : [["Avançar", () => this.move(c.id, nextOf(name))], ["Perdi", () => this.move(c.id, "Perdido")]]
+          ).map(([label, go]) => ({ label, go,
+            style: "font-family:inherit;font-size:11px;font-weight:500;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer" })),
+        })),
+      };
+    });
+
+    const stageChip = s => s === "Ativo" ? chip("var(--okBg)", "var(--okFg)") : chip("var(--accSoft)", "var(--accFg)");
+
+    return {
+      nav, stages,
+      title: meta[v][0], subtitle: meta[v][1],
+      isDash: v === "dash", isFunnel: v === "funnel", isClients: v === "clients",
+      isLost: v === "lost", isComm: v === "comm", isReports: v === "reports",
+      goalStyle: `width:${Math.min(100, Math.round(closedTotal / 18000))}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:var(--glow)`,
+      goalLabel: compact(closedTotal) + " de R$ 1,80 M",
+
+      clients: closed.map(c => ({
+        name: c.name, type: c.type, city: c.city, value: brl(c.value),
+        stage: "Ativo", stageStyle: stageChip("Ativo"), owner: c.owner })),
+      clientCount: closed.length, clientTotal: compact(closedTotal),
+
+      lost: lostList.map(l => ({
+        name: l.name, owner: l.owner, value: brl(l.value), reason: l.reason,
+        date: l.date || "Agora", recall: l.recall || "A definir",
+        recycle: () => this.recycle(l.id) })),
+      lostEmpty: lostList.length === 0,
+      lostKpis: [
+        { label: "Projetos em reciclagem", value: String(lostList.length) },
+        { label: "Valor recuperável", value: compact(sum(lostList)) },
+        { label: "Retomadas em 90 dias", value: "3" },
+      ],
+      lostReasons: [["Preço acima do orçamento", 38], ["Optou por concorrente", 27], ["Sem crédito aprovado", 21], ["Postergou o projeto", 14]]
+        .map(([name, p]) => ({ name, pct: p + "%", barStyle: `width:${p * 2.6}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))` })),
+
+      kpis: [
+        ["Projetos fechados no mês", compact(closedTotal), "▲ 18,4% vs. julho", 1],
+        ["Pipeline ativo", compact(sum(deals.filter(d => !["Fechado", "Perdido"].includes(d.stage)))), activeCount + " projetos em andamento", 0],
+        ["Projetos fechados", String(closed.length), "▲ 11,2% vs. julho", 1],
+        ["Taxa de fechamento", "22,4%", "▼ 1,8 p.p. vs. julho", -1],
+      ].map(([label, value, delta, dir]) => ({ label, value, delta,
+        deltaStyle: `font-size:11.5px;color:${dir === 1 ? "var(--okFg)" : dir === -1 ? "var(--badFg)" : "var(--muted2)"}` })),
+
+      bars: [["Jan", 52], ["Fev", 61], ["Mar", 48], ["Abr", 74], ["Mai", 83], ["Jun", 69], ["Jul", 91], ["Ago", 100], ["Set", 34]]
+        .map(([m, h]) => ({ m, style: `width:100%;max-width:26px;height:${h}%;background:${h === 100 ? "linear-gradient(180deg,var(--accent),var(--accent2))" : "var(--bar)"};border-radius:3px 3px 0 0;box-shadow:${h === 100 ? "var(--glow)" : "none"}` })),
+
+      sources: [["Indicação", 34], ["Google Ads", 26], ["Feira / eventos", 16], ["Instagram", 14], ["Porta a porta", 10]]
+        .map(([name, p]) => ({ name, pct: p + "%", barStyle: `width:${p * 2.6}%;height:100%;background:${p > 25 ? "linear-gradient(90deg,var(--accent),var(--accent2))" : "var(--bar2)"};box-shadow:${p > 25 ? "var(--glow)" : "none"}` })),
+
+      agenda: [
+        { when: "Ter · 09h00", title: "Visita técnica — Fazenda Santa Rita", who: "Equipe A · Uberaba/MG" },
+        { when: "Qua · 14h30", title: "Homologação CPFL — Auto Posto Cruzeiro", who: "Eng. Paulo · protocolo #4412" },
+        { when: "Sex · 08h00", title: "Início de instalação — Clínica Vitalis", who: "Equipe C · projeto #2291" },
+      ],
+
+      dark: this.state.dark,
+      themeLabel: this.state.dark ? "Tema escuro" : "Tema claro",
+      toggleTheme: () => this.setState(s => ({ dark: !s.dark })),
+      themeSwitchStyle: `width:28px;height:16px;border-radius:99px;background:${this.state.dark ? "linear-gradient(90deg,var(--accent),var(--accent2))" : "var(--bar2)"};display:flex;align-items:center;padding:2px;justify-content:${this.state.dark ? "flex-end" : "flex-start"};transition:.18s`,
+      themeKnobStyle: "width:12px;height:12px;border-radius:99px;background:var(--surface);display:block",
+      commRevenue: compact(commRows.reduce((t, r) => t + r[2], 0)),
+      commTotal: brl(Math.round(commRows.reduce((t, r) => t + r[4], 0))),
+      commissions: commRows.length ? commRows.map(r => [r[0], r[1], brl(r[2]), r[3], brl(Math.round(r[4])), r[5]]).map(([name, deals, revenue, rate, commission, status]) => ({
+        name, deals, revenue, rate, commission, status,
+        statusStyle: (status === "Aprovado" ? chip("var(--okBg)", "var(--okFg)") : status === "Retido" ? chip("var(--badBg)", "var(--badFg)") : chip("var(--warnBg)", "var(--warnFg)")) + ";white-space:nowrap" })) : [
+        ["Rafael Mendes", 7, "R$ 428.000", "4,2%", "R$ 17.976", "Aprovado"],
+        ["Diego Souza", 6, "R$ 351.400", "3,8%", "R$ 13.353", "Aprovado"],
+        ["Bruna Rocha", 5, "R$ 298.100", "3,5%", "R$ 10.433", "Em análise"],
+        ["Ana Lima", 4, "R$ 201.900", "3,0%", "R$ 6.057", "Aprovado"],
+        ["Thiago Nunes", 2, "R$ 89.500", "3,0%", "R$ 2.685", "Em análise"],
+        ["Carla Dias", 1, "R$ 50.000", "1,5%", "R$ 736", "Retido"],
+      ].map(([name, deals, revenue, rate, commission, status]) => ({
+        name, deals, revenue, rate, commission, status,
+        statusStyle: (status === "Aprovado" ? chip("var(--okBg)", "var(--okFg)") : status === "Retido" ? chip("var(--badBg)", "var(--badFg)") : chip("var(--warnBg)", "var(--warnFg)")) + ";white-space:nowrap" })),
+
+      tiers: [
+        { name: "Comissão do projeto", range: "5% sobre o valor total do projeto", rate: "5%" },
+        { name: "Liberação", range: "após assinatura do contrato", rate: "50%" },
+        { name: "Saldo", range: "na entrega e homologação", rate: "50%" },
+        { name: "Retenção", range: "projeto cancelado no período", rate: "0%" },
+      ],
+
+      conv: [["Lead → Qualif.", 67, "67%"], ["Qualif. → Proposta", 54, "54%"], ["Proposta → Negoc.", 41, "41%"], ["Negoc. → Fechado", 58, "58%"], ["Lead → Fechado", 22, "22%"]]
+        .map(([name, p, value]) => ({ name, value, barStyle: `width:${p}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:var(--glow)` })),
+
+      regions: [
+        { name: "Campinas e região", value: "R$ 1,28 M" },
+        { name: "Interior SP", value: "R$ 902 K" },
+        { name: "Triângulo Mineiro", value: "R$ 744 K" },
+        { name: "Litoral norte", value: "R$ 571 K" },
+        { name: "Grande SP", value: "R$ 448 K" },
+      ],
+
+      reportCards: [
+        { label: "Prazo médio de execução", value: "38 dias", note: "Da assinatura à entrega do projeto" },
+        { label: "CAC", value: "R$ 1.940", note: "Queda de 8% com indicações" },
+        { label: "Recuperação de perdidos", value: "12%", note: "Projetos reciclados que voltaram ao funil" },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>
