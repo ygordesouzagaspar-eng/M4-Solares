@@ -266,6 +266,15 @@
           })
           .select()
           .single();
+        if (ins.error) {
+          say(
+            "Não foi possível preparar seu cadastro (" + ins.error.message +
+            "). Peça ao administrador para rodar auth_policies.sql no Supabase.",
+            "err"
+          );
+          $("#auth-go").disabled = false;
+          return;
+        }
         row = ins.data;
       }
 
