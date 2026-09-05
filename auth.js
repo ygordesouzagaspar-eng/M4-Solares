@@ -82,6 +82,7 @@
   #auth-links button{background:none;border:0;font-family:inherit;font-size:12px;color:#8A8A86;
     cursor:pointer;padding:0}
   #auth-links button:hover{color:#FFB300}
+  #auth-admin-note{text-align:center;font-size:11.5px;color:#5A5A57;margin-top:14px}
 
   @media (max-width:820px){
     #auth-card{grid-template-columns:1fr}
@@ -153,9 +154,9 @@
           <button id="auth-go">${svg(SVG.login)}<span>Entrar</span></button>
           <div id="auth-msg"></div>
           <div id="auth-links">
-            <button id="auth-toggle">Criar conta</button>
             <button id="auth-reset">Esqueci a senha</button>
           </div>
+          <div id="auth-admin-note">Não tem acesso? Fale com o administrador do sistema.</div>
         </div>
       </div>`;
     document.body.appendChild(el);
@@ -178,7 +179,6 @@
     const $ = (id) => box.querySelector(id);
     const msg = $("#auth-msg");
     const say = (t, cls) => { msg.textContent = t; msg.className = cls || ""; };
-    let mode = "login";
 
     $("#auth-eye").onclick = function toggleEye() {
       const i = $("#auth-pass");
@@ -188,17 +188,6 @@
       b.innerHTML = svg(show ? SVG.eyeOff : SVG.eye);
       b.title = show ? "Ocultar senha" : "Mostrar senha";
       b.onclick = toggleEye;
-    };
-
-    $("#auth-toggle").onclick = () => {
-      mode = mode === "login" ? "signup" : "login";
-      $("#auth-title").textContent = mode === "login" ? "Bem-vindo de volta" : "Criar sua conta";
-      $("#auth-hint").textContent = mode === "login"
-        ? "Entre com suas credenciais para acessar o sistema"
-        : "Cadastre seu e-mail corporativo para começar";
-      $("#auth-go").querySelector("span").textContent = mode === "login" ? "Entrar" : "Criar conta";
-      $("#auth-toggle").textContent = mode === "login" ? "Criar conta" : "Já tenho conta";
-      say("");
     };
 
     $("#auth-reset").onclick = async () => {
@@ -220,17 +209,8 @@
       $("#auth-go").disabled = true;
       say("Aguarde…");
       try {
-        if (mode === "login") {
-          const { error } = await sb.auth.signInWithPassword({ email, password });
-          if (error) throw error;
-        } else {
-          const { data, error } = await sb.auth.signUp({ email, password });
-          if (error) throw error;
-          if (!data.session) {
-            $("#auth-go").disabled = false;
-            return say("Conta criada. Confirme o e-mail e depois faça login.", "ok");
-          }
-        }
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) throw error;
         await enter();
       } catch (e) {
         $("#auth-go").disabled = false;
