@@ -62,6 +62,7 @@
         needDetail: p.need_detail,
         nextAction: p.next_action || "",
         nextActionAt: fmtFull(p.next_action_at),
+        nextActionAtRaw: p.next_action_at || "",
         lastContactNote: p.last_contact_note || "",
       }));
     },
@@ -199,6 +200,27 @@
         .from("commissions")
         .update({ status })
         .eq("id", commissionId);
+      if (error) throw error;
+    },
+    /* --------------------------------------------------- editar projeto/lead */
+    async updateProject(id, form) {
+      const { error } = await window.sb
+        .from("projects")
+        .update({
+          title: form.title.trim(),
+          value_brl: Number(String(form.value).replace(/\./g, "").replace(",", ".")) || 0,
+          source: form.source || null,
+          city: form.city || null,
+          uf: (form.uf || "").toUpperCase().slice(0, 2) || null,
+          opportunity_type: form.opportunityType || "Cliente",
+          avg_bill_brl: form.avgBill ? Number(String(form.avgBill).replace(/\./g, "").replace(",", ".")) : null,
+          has_solar: form.hasSolar === "Sim" ? true : form.hasSolar === "Não" ? false : null,
+          deadline: form.deadline || null,
+          need_detail: form.needDetail || null,
+          next_action: form.nextAction || null,
+          next_action_at: form.nextActionAt || null,
+        })
+        .eq("id", id);
       if (error) throw error;
     },
   };
