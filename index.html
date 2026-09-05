@@ -1,229 +1,902 @@
-/* ------------------------------------------------------------------
-   data.js — acesso aos dados do CRM (Supabase)
-   Carregar DEPOIS de config.js e auth.js.
-   Expõe window.CRM
-------------------------------------------------------------------- */
-(function () {
-  const abbr = (full) => {
-    if (!full) return "—";
-    const p = full.trim().split(/\s+/);
-    return p.length === 1 ? p[0] : `${p[0]} ${p[1][0]}.`;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M4 Solar — CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="./config.js"></script>
+<script src="./auth.js"></script>
+<script src="./data.js"></script>
+<style>
+  *{box-sizing:border-box}
+  :root{--bg:#FAFAF8;--surface:#ffffff;--hover:#FDFCF9;--line:#E8E8E4;--line2:#D2D2CC;--soft:#F3F3EF;--bar:#E6E6E1;--bar2:#C8C8C2;--text:#16181A;--text2:#3A3D42;--text3:#5C5F64;--muted:#86898E;--muted2:#9A9DA2;--faint:#B2B5B9;--accent:#F59300;--accent2:#FF6A00;--glow:0 0 0 1px rgba(245,147,0,.30);--accSoft:#FFF6E6;--accSoft2:#FFEECC;--accLine:#F3D6A0;--accFg:#9A4A05;--okBg:#EDF6F0;--okFg:#28794A;--badBg:#FCEEEC;--badFg:#A63A31;--warnBg:#FBF3E2;--warnFg:#7C6522}
+  :root[data-theme="dark"]{--bg:#131313;--surface:#1A1A1A;--hover:#212121;--line:#2C2C2C;--line2:#3D3D3D;--soft:#242424;--bar:#2E2E2E;--bar2:#454545;--text:#F2F2F0;--text2:#C6C6C2;--text3:#9C9C98;--muted:#8A8A86;--muted2:#757571;--faint:#5A5A57;--accent:#FFB300;--accent2:#FF7A18;--glow:0 0 24px rgba(255,140,0,.22);--accSoft:#241A08;--accSoft2:#2E2109;--accLine:#4B3410;--accFg:#FFC24D;--okBg:#122016;--okFg:#57D68C;--badBg:#241413;--badFg:#FF8A7A;--warnBg:#241D0C;--warnFg:#FFD37A}
+  body{margin:0;background:var(--bg);font-family:'Inter Tight',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:var(--text)}
+  select option{background:var(--surface);color:var(--text)}
+  ::-webkit-scrollbar{width:7px;height:7px}
+  ::-webkit-scrollbar-thumb{background:#DFDFD9;border-radius:8px}
+  input,select,button{font-family:inherit}
+  .hoverable:hover{background:var(--soft)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ==================================================================
+   M4 Solar — CRM (JavaScript puro, sem dependências de framework)
+   ================================================================== */
+const STAGES = ["Lead", "Qualificado", "Proposta", "Negociação", "Fechado", "Perdido"];
+const brl = n => "R$ " + (n || 0).toLocaleString("pt-BR");
+const compact = n => n >= 1e6 ? "R$ " + (n / 1e6).toFixed(2).replace(".", ",") + " M" : "R$ " + Math.round(n / 1e3) + " K";
+const chip = (bg, fg) => `font-size:10.5px;font-weight:500;padding:3px 9px;border-radius:99px;background:${bg};color:${fg}`;
+const abbr = (full) => { if (!full) return "—"; const p = full.trim().split(/\s+/); return p.length === 1 ? p[0] : `${p[0]} ${p[1][0]}.`; };
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+
+/* ------------------------------------------------------------ ícones SVG */
+const P = {
+  grid:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  funnel:'<path d="M3 4h18l-7 8.2V19l-4 2v-8.8z"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/>',
+  recycle:'<path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 3.5V9h5.5"/>',
+  percent:'<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+  chart:'<line x1="3" y1="21" x2="3" y2="11"/><line x1="9" y1="21" x2="9" y2="4"/><line x1="15" y1="21" x2="15" y2="14"/><line x1="21" y1="21" x2="21" y2="8"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  search:'<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  arrow:'<line x1="4" y1="12" x2="18" y2="12"/><polyline points="12.5 6.5 18 12 12.5 17.5"/>',
+  arrowLeft:'<line x1="20" y1="12" x2="6" y2="12"/><polyline points="11.5 6.5 6 12 11.5 17.5"/>',
+  x:'<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
+  user:'<path d="M20 21v-2a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v2"/><circle cx="12" cy="7" r="4"/>',
+  money:'<path d="M3 7h18v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 7l3-4h12l3 4"/><circle cx="12" cy="13.5" r="2.4"/>',
+  layers:'<polygon points="12 2 22 8 12 14 2 8"/><polyline points="2 14 12 20 22 14"/>',
+  check:'<circle cx="12" cy="12" r="9"/><polyline points="8 12.5 11 15.5 16 9.5"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>',
+  pin:'<path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/>',
+  bolt:'<polygon points="13 2 4 14 11 14 10 22 20 10 13 10"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+};
+const DONUT_COLORS = ["var(--accent)", "var(--accent2)", "#C97A2E", "var(--bar2)", "var(--faint)"];
+const uri = p => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`)}")`;
+const ico = (p, size = 15) => { const u = uri(p); return `display:inline-block;flex:0 0 auto;width:${size}px;height:${size}px;background:currentColor;-webkit-mask:${u} center/contain no-repeat;mask:${u} center/contain no-repeat`; };
+
+const EMPTY_FORM = {
+  title: "", clientName: "", contactName: "", contactRole: "", whatsapp: "", email: "", address: "",
+  kind: "Residencial", classification: "Cliente", doc: "", segment: "", city: "", uf: "SP",
+  source: "Indicação", opportunityType: "Cliente", firstContact: "",
+  value: "", avgBill: "", hasSolar: "", deadline: "Agora", needDetail: "",
+  channel: "WhatsApp", contactNote: "", nextAction: "", nextActionAt: "",
+};
+const EMPTY_EDIT = { name: "", kind: "Residencial", classification: "Cliente", doc: "", contactName: "", contactRole: "", whatsapp: "", email: "", address: "", segment: "", city: "", uf: "SP" };
+
+/* ============================================================== estado */
+const state = {
+  view: "dash", deals: [], commissions: [], dark: false, loading: true, err: "", query: "",
+  modalOpen: false, saving: false, modalMsg: "", modalErr: false, form: { ...EMPTY_FORM },
+  editOpen: false, editSaving: false, editMsg: "", editErr: false, editId: null, editForm: { ...EMPTY_EDIT },
+  leadEditOpen: false, leadEditSaving: false, leadEditMsg: "", leadEditErr: false, leadEditId: null, leadEditForm: {},
+};
+
+function setState(patch) { Object.assign(state, patch); render(); }
+function applyTheme() { document.documentElement.dataset.theme = state.dark ? "dark" : "light"; }
+
+/* ============================================================== dados */
+async function load() {
+  try {
+    const [deals, commissions] = await Promise.all([
+      window.CRM.listProjects(),
+      window.CRM.listCommissions().catch(() => []),
+    ]);
+    setState({ deals, commissions, loading: false, err: "" });
+  } catch (e) {
+    setState({ loading: false, err: e.message || "Falha ao carregar projetos." });
+  }
+}
+
+async function move(id, stage) {
+  setState({ deals: state.deals.map(d => d.id === id ? { ...d, stage } : d) });
+  try { await window.CRM.setStage(id, stage); } catch (e) { setState({ err: e.message }); }
+  load();
+}
+
+async function recycle(id) {
+  setState({
+    deals: state.deals.map(d => d.id === id ? { ...d, stage: "Lead", reason: null, date: null, recall: null } : d),
+    view: "funnel",
+  });
+  try { await window.CRM.setStage(id, "Lead"); } catch (e) { setState({ err: e.message }); }
+  load();
+}
+
+async function saveProject() {
+  const f = state.form;
+  if (!f.title.trim()) { setState({ modalMsg: "Informe o nome do projeto.", modalErr: true }); return; }
+  setState({ saving: true, modalMsg: "Salvando…", modalErr: false });
+  try {
+    await window.CRM.createProject(f);
+    setState({ saving: false, modalOpen: false, modalMsg: "", form: { ...EMPTY_FORM } });
+    load();
+  } catch (e) {
+    setState({ saving: false, modalMsg: e.message, modalErr: true });
+  }
+}
+
+function openEdit(deal) {
+  setState({
+    editOpen: true, editMsg: "", editId: deal.clientId,
+    editForm: {
+      name: deal.client?.name || deal.name || "",
+      kind: deal.client?.kind || "Residencial",
+      classification: deal.isPartner ? "Parceria" : "Cliente",
+      doc: deal.client?.doc || "",
+      contactName: deal.client?.contact_name || "",
+      contactRole: deal.client?.contact_role || "",
+      whatsapp: deal.client?.whatsapp || deal.client?.phone || "",
+      email: deal.client?.email || "",
+      address: deal.client?.address || "",
+      segment: deal.client?.segment || "",
+      city: (deal.city || "").split(" / ")[0] || "",
+      uf: (deal.city || "").split(" / ")[1] || "SP",
+    },
+  });
+}
+function closeEdit() { setState({ editOpen: false }); }
+
+async function saveEdit() {
+  const f = state.editForm;
+  if (!f.name.trim()) { setState({ editMsg: "Informe o nome do cliente.", editErr: true }); return; }
+  setState({ editSaving: true, editMsg: "Salvando…", editErr: false });
+  try {
+    await window.CRM.updateClient(state.editId, f);
+    setState({ editSaving: false, editOpen: false, editMsg: "" });
+    load();
+  } catch (e) {
+    setState({ editSaving: false, editMsg: e.message, editErr: true });
+  }
+}
+
+function openLeadEdit(deal) {
+  const [city, uf] = (deal.city || "").split(" / ");
+  setState({
+    leadEditOpen: true, leadEditMsg: "", leadEditId: deal.id,
+    leadEditForm: {
+      title: deal.name || "", value: String(deal.value || ""), city: city || "", uf: uf || "SP",
+      source: deal.source || "Indicação", opportunityType: deal.opportunityType || "Cliente",
+      avgBill: deal.avgBill != null ? String(deal.avgBill) : "",
+      hasSolar: deal.hasSolar === true ? "Sim" : deal.hasSolar === false ? "Não" : "",
+      deadline: deal.deadline || "Agora", needDetail: deal.needDetail || "",
+      nextAction: deal.nextAction || "", nextActionAt: deal.nextActionAtRaw || "",
+    },
+  });
+}
+function closeLeadEdit() { setState({ leadEditOpen: false }); }
+
+async function saveLeadEdit() {
+  const f = state.leadEditForm;
+  if (!f.title.trim()) { setState({ leadEditMsg: "Informe o nome do projeto.", leadEditErr: true }); return; }
+  setState({ leadEditSaving: true, leadEditMsg: "Salvando…", leadEditErr: false });
+  try {
+    await window.CRM.updateProject(state.leadEditId, f);
+    setState({ leadEditSaving: false, leadEditOpen: false, leadEditMsg: "" });
+    load();
+  } catch (e) {
+    setState({ leadEditSaving: false, leadEditMsg: e.message, leadEditErr: true });
+  }
+}
+
+async function setCommissionStatus(id, status) {
+  setState({ commissions: state.commissions.map(c => c.id === id ? { ...c, status } : c) });
+  try { await window.CRM.setCommissionStatus(id, status); } catch (e) { setState({ err: e.message }); }
+  load();
+}
+
+/* ============================================================== render */
+function fieldHtml(f) {
+  const wrap = f.span === "full" ? "grid-column:1 / -1" : "";
+  let input;
+  if (f.type === "select") {
+    input = `<select data-bind="${f.bind}" data-key="${f.key}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;color:var(--text);outline:none">
+      ${(f.options || []).map(o => `<option value="${esc(o)}" ${f.value === o ? "selected" : ""}>${esc(o || "—")}</option>`).join("")}
+    </select>`;
+  } else if (f.type === "date") {
+    input = `<input type="date" data-bind="${f.bind}" data-key="${f.key}" value="${esc(f.value)}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;color:var(--text);outline:none" />`;
+  } else {
+    input = `<input data-bind="${f.bind}" data-key="${f.key}" value="${esc(f.value)}" placeholder="${esc(f.placeholder || "")}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;color:var(--text);outline:none" />`;
+  }
+  return `<div style="${wrap}"><label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px">${esc(f.label)}</label>${input}</div>`;
+}
+
+function newLeadModal() {
+  if (!state.modalOpen) return "";
+  const f = state.form;
+  const sections = [
+    { title: "Cadastro inicial", fields: [
+      ["title", "Nome do projeto *", "Ex.: Usina 30 kWp — Loja São João", "full"],
+      ["clientName", "Empresa / cliente", "Loja São João"],
+      ["contactName", "Nome do responsável", "Carlos"],
+      ["contactRole", "Cargo", "Proprietário"],
+      ["whatsapp", "WhatsApp", "(11) 99999-9999"],
+      ["email", "E-mail", "contato@empresa.com.br"],
+      ["segment", "Segmento", "Material de construção"],
+      ["kind", "Tipo de cliente", null, null, ["Residencial", "Empresa", "Rural", "Condomínio", "Poder público"]],
+      ["classification", "Classificação", null, null, ["Cliente", "Parceria"]],
+      ["doc", "CPF / CNPJ", "Somente números"],
+      ["address", "Endereço", "Rua, número, bairro", "full"],
+      ["city", "Cidade / região", "Burgo Paulista"],
+      ["uf", "UF", "SP"],
+    ]},
+    { title: "Origem e oportunidade", fields: [
+      ["source", "Origem do lead", null, null, ["Indicação", "Google Ads", "Feira / eventos", "Instagram", "Porta a porta", "Visita presencial"]],
+      ["opportunityType", "Tipo de oportunidade", null, null, ["Cliente", "Parceiro", "Ambos"]],
+      ["firstContact", "Data do primeiro contato", "", null, null, "date"],
+    ]},
+    { title: "Qualificação (se energia solar)", fields: [
+      ["value", "Valor do projeto (R$)", "62000"],
+      ["avgBill", "Valor médio da conta (R$/mês)", "3500"],
+      ["hasSolar", "Já possui solar?", null, null, ["", "Sim", "Não"]],
+      ["deadline", "Prazo", null, null, ["Agora", "3–6 meses", "Sem previsão"]],
+      ["needDetail", "Necessidade / interesse", "Elétrica, parceria, solar…", "full"],
+    ]},
+    { title: "Acompanhamento — sempre com próxima ação e data", fields: [
+      ["channel", "Canal do contato", null, null, ["WhatsApp", "Ligação", "E-mail", "Visita presencial"]],
+      ["contactNote", "O que aconteceu", "Enviei portfólio e expliquei os serviços.", "full"],
+      ["nextAction", "Próxima ação", "Fazer follow-up"],
+      ["nextActionAt", "Data da próxima ação", "", null, null, "date"],
+    ]},
+  ];
+  const sectionsHtml = sections.map(sec => `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:11.5px;font-weight:600;color:var(--accFg);text-transform:uppercase;letter-spacing:.4px">${esc(sec.title)}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        ${sec.fields.map(([key, label, placeholder, span, options, type]) => fieldHtml({
+          key, label, placeholder, span, options, type: options ? "select" : (type || "text"),
+          value: f[key], bind: "form",
+        })).join("")}
+      </div>
+    </div>`).join("");
+
+  return `
+  <div class="modal-overlay" style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div style="width:600px;max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Novo lead</div>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:2px">Checklist do primeiro contato — M4 Engenharia</div>
+        </div>
+        <button data-action="closeModal" style="border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:15px;line-height:1">×</button>
+      </div>
+      ${sectionsHtml}
+      <div style="font-size:12px;min-height:16px;color:${state.modalErr ? "var(--badFg)" : "var(--muted)"}">${esc(state.modalMsg)}</div>
+      <div style="display:flex;gap:9px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:16px">
+        <button data-action="closeModal" style="font-size:12.5px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer">Cancelar</button>
+        <button data-action="saveProject" style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:8px;border:0;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#1A1206;cursor:pointer;box-shadow:var(--glow)">
+          <span style="${ico(P.plus, 13)}"></span>${state.saving ? "Salvando…" : "Criar projeto"}
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function editClientModal() {
+  if (!state.editOpen) return "";
+  const f = state.editForm;
+  const fields = [
+    ["name", "Nome do cliente *", "", "full"],
+    ["classification", "Classificação", null, null, ["Cliente", "Parceria"]],
+    ["kind", "Tipo de cliente", null, null, ["Residencial", "Empresa", "Rural", "Condomínio", "Poder público"]],
+    ["doc", "CPF / CNPJ"],
+    ["contactName", "Nome do responsável"],
+    ["contactRole", "Cargo"],
+    ["whatsapp", "WhatsApp / Telefone"],
+    ["email", "E-mail"],
+    ["segment", "Segmento"],
+    ["address", "Endereço", "", "full"],
+    ["city", "Cidade"],
+    ["uf", "UF"],
+  ];
+  return `
+  <div class="modal-overlay" style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div style="width:560px;max-height:88vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Editar cliente</div>
+        <button data-action="closeEdit" style="border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:15px;line-height:1">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        ${fields.map(([key, label, placeholder, span, options]) => fieldHtml({
+          key, label, placeholder, span, options, type: options ? "select" : "text", value: f[key], bind: "editForm",
+        })).join("")}
+      </div>
+      <div style="font-size:12px;min-height:16px;color:${state.editErr ? "var(--badFg)" : "var(--muted)"}">${esc(state.editMsg)}</div>
+      <div style="display:flex;gap:9px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:16px">
+        <button data-action="closeEdit" style="font-size:12.5px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer">Cancelar</button>
+        <button data-action="saveEdit" style="font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:8px;border:0;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#1A1206;cursor:pointer;box-shadow:var(--glow)">${state.editSaving ? "Salvando…" : "Salvar alterações"}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function leadEditModal() {
+  if (!state.leadEditOpen) return "";
+  const f = state.leadEditForm || {};
+  const fields = [
+    ["title", "Nome do projeto *", "", "full"],
+    ["value", "Valor do projeto (R$)", "62000"],
+    ["source", "Origem", null, null, ["Indicação", "Google Ads", "Feira / eventos", "Instagram", "Porta a porta", "Visita presencial"]],
+    ["opportunityType", "Tipo de oportunidade", null, null, ["Cliente", "Parceiro", "Ambos"]],
+    ["city", "Cidade / região"],
+    ["uf", "UF"],
+    ["avgBill", "Valor médio da conta (R$/mês)", "3500"],
+    ["hasSolar", "Já possui solar?", null, null, ["", "Sim", "Não"]],
+    ["deadline", "Prazo", null, null, ["Agora", "3–6 meses", "Sem previsão"]],
+    ["needDetail", "Necessidade / interesse", "", "full"],
+    ["nextAction", "Próxima ação"],
+    ["nextActionAt", "Data da próxima ação", "", null, null, "date"],
+  ];
+  return `
+  <div class="modal-overlay" style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div style="width:560px;max-height:88vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Editar lead</div>
+        <button data-action="closeLeadEdit" style="border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:15px;line-height:1">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        ${fields.map(([key, label, placeholder, span, options, type]) => fieldHtml({
+          key, label, placeholder, span, options, type: options ? "select" : (type || "text"), value: f[key] ?? "", bind: "leadEditForm",
+        })).join("")}
+      </div>
+      <div style="font-size:12px;min-height:16px;color:${state.leadEditErr ? "var(--badFg)" : "var(--muted)"}">${esc(state.leadEditMsg)}</div>
+      <div style="display:flex;gap:9px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:16px">
+        <button data-action="closeLeadEdit" style="font-size:12.5px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer">Cancelar</button>
+        <button data-action="saveLeadEdit" style="font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:8px;border:0;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#1A1206;cursor:pointer;box-shadow:var(--glow)">${state.leadEditSaving ? "Salvando…" : "Salvar alterações"}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function sidebarHtml(v, nav) {
+  const userName = window.me?.name || (window.currentUser?.email || "").split("@")[0] || "Consultor";
+  const userRole = window.me?.role === "gerente" ? "Gerente" : window.me?.role === "admin" ? "Admin" : "Consultor";
+  const userInitial = (window.me?.name || window.currentUser?.email || "?").trim().charAt(0).toUpperCase();
+  return `
+  <aside style="border-right:1px solid var(--line);padding:24px 14px;display:flex;flex-direction:column;gap:28px;position:sticky;top:0;height:100vh;background:var(--bg)">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 8px">
+      <div style="width:9px;height:9px;border-radius:99px;background:linear-gradient(140deg,var(--accent),var(--accent2));box-shadow:var(--glow)"></div>
+      <div style="font-size:14px;font-weight:600;letter-spacing:-.2px">M4 Solar</div>
+    </div>
+    <nav style="display:flex;flex-direction:column;gap:2px">
+      ${nav.map(item => `
+        <button data-action="setView" data-view="${item.id}" style="${item.style}" class="hoverable">
+          <span style="display:flex;align-items:center;gap:9px;min-width:0">
+            <span style="${ico(item.icon, 15)}"></span><span>${esc(item.label)}</span>
+          </span>
+          <span style="font-size:10.5px;color:${v === item.id ? "var(--text3)" : "var(--faint)"}">${item.badge}</span>
+        </button>`).join("")}
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 4px">
+        <div style="flex:0 0 auto;width:32px;height:32px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#1A1206;background:linear-gradient(140deg,var(--accent),var(--accent2))">${esc(userInitial)}</div>
+        <div style="min-width:0;flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(userName)}</div>
+          <div style="font-size:11px;font-weight:500;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(userRole)}</div>
+        </div>
+        <button data-action="signOut" title="Sair" style="flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:26px;height:26px;border:0;background:transparent;cursor:pointer;color:var(--muted)">
+          <span style="${ico(P.logout, 13)}"></span>
+        </button>
+      </div>
+    </div>
+  </aside>`;
+}
+
+function render() {
+  applyTheme();
+  const v = state.view;
+  const q = state.query.trim().toLowerCase();
+  const deals = q ? state.deals.filter(d => (d.name + " " + d.city + " " + d.owner).toLowerCase().includes(q)) : state.deals;
+  const at = s => deals.filter(d => d.stage === s);
+  const closed = at("Fechado"), lostList = at("Perdido");
+  const sum = arr => arr.reduce((t, d) => t + d.value, 0);
+  const closedTotal = sum(closed);
+  const active = deals.filter(d => !["Fechado", "Perdido"].includes(d.stage));
+
+  const meta = {
+    dash: ["Dashboard", "Visão geral dos seus projetos"],
+    funnel: ["Funil de projetos", "Use as ações do card para mover o projeto de etapa"],
+    clients: ["Clientes", "Projetos fechados consolidados na ficha do cliente"],
+    lost: ["Perdidos", "Projetos perdidos disponíveis para reciclagem"],
+    comm: ["Comissionamento", "5% do valor de cada projeto fechado"],
+    reports: ["Relatórios", "Indicadores comerciais e de execução de projetos"],
   };
 
-  const CRM = {
-    /* ---------------------------------------------------- listar projetos */
-    async listProjects() {
-      const { data, error } = await window.sb
-        .from("projects")
-        .select(`
-          id, title, stage, value_brl, city, uf, source, client_id,
-          lost_at, recycle_at, loss_reason_id,
-          opportunity_type, first_contact_at, avg_bill_brl, has_solar, deadline, need_detail,
-          last_contact_at, last_contact_channel, last_contact_note, next_action, next_action_at,
-          clients ( id, name, kind, doc, contact_name, contact_role, whatsapp, phone, email, address, segment, is_partner ),
-          consultants ( id, name ),
-          loss_reasons ( label )
-        `)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
+  const nav = [
+    { id: "dash", label: "Dashboard", badge: "", icon: P.grid },
+    { id: "funnel", label: "Funil", badge: active.length, icon: P.funnel },
+    { id: "clients", label: "Clientes", badge: closed.length, icon: P.users },
+    { id: "lost", label: "Perdidos", badge: lostList.length, icon: P.recycle },
+    { id: "comm", label: "Comissionamento", badge: "", icon: P.percent },
+    { id: "reports", label: "Relatórios", badge: "", icon: P.chart },
+  ].map(item => ({
+    ...item,
+    style: `display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;font-size:13px;padding:8px 9px;border-radius:8px;border:0;cursor:pointer;width:100%;${
+      v === item.id ? "background:var(--soft);color:var(--text);font-weight:600;box-shadow:inset 2px 0 0 var(--accent)" : "background:transparent;color:var(--text3);font-weight:400"}`,
+  }));
 
-      const fmtDate = (d) =>
-        d ? new Date(d).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }) : null;
-      const fmtFull = (d) => (d ? new Date(d + "T12:00:00").toLocaleDateString("pt-BR") : null);
+  let body = "";
+  if (v === "dash") body = dashHtml({ deals, at, sum, closedTotal, active, lostList });
+  else if (v === "funnel") body = funnelHtml({ at, sum });
+  else if (v === "clients") body = clientsHtml({ closed, closedTotal });
+  else if (v === "lost") body = lostHtml({ lostList, sum });
+  else if (v === "comm") body = commHtml();
+  else if (v === "reports") body = reportsHtml({ deals, at, closed, closedTotal, active });
 
-      return (data || []).map((p) => ({
-        id: p.id,
-        name: p.title,
-        clientId: p.client_id,
-        client: p.clients || null,
-        isPartner: !!p.clients?.is_partner,
-        type: p.clients
-          ? `${p.clients.kind} · ${/^\d{14}$/.test((p.clients.doc || "").replace(/\D/g, "")) ? "CNPJ" : "CPF"}`
-          : "—",
-        city: [p.city, p.uf].filter(Boolean).join(" / "),
-        value: Number(p.value_brl) || 0,
-        stage: p.stage,
-        owner: abbr(p.consultants?.name),
-        source: p.source,
-        reason: p.loss_reasons?.label || null,
-        date: fmtDate(p.lost_at),
-        recall: p.recycle_at
-          ? new Date(p.recycle_at + "T12:00:00").toLocaleDateString("pt-BR", { month: "short", year: "numeric" })
-          : null,
-        contactName: p.clients?.contact_name || "",
-        contactRole: p.clients?.contact_role || "",
-        whatsapp: p.clients?.whatsapp || p.clients?.phone || "",
-        segment: p.clients?.segment || "",
-        opportunityType: p.opportunity_type || "Cliente",
-        firstContact: fmtFull(p.first_contact_at),
-        avgBill: p.avg_bill_brl,
-        hasSolar: p.has_solar,
-        deadline: p.deadline,
-        needDetail: p.need_detail,
-        nextAction: p.next_action || "",
-        nextActionAt: fmtFull(p.next_action_at),
-        nextActionAtRaw: p.next_action_at || "",
-        lastContactNote: p.last_contact_note || "",
-      }));
-    },
+  const banner = state.err ? state.err : (state.loading ? "Carregando projetos…" : "");
+  const bannerHtml = banner ? `<div style="font-size:12.5px;padding:11px 15px;border-radius:9px;border:1px solid ${state.err ? "var(--badFg)" : "var(--line)"};background:${state.err ? "var(--badBg)" : "var(--soft)"};color:${state.err ? "var(--badFg)" : "var(--muted)"}">${esc(banner)}</div>` : "";
 
-    /* ------------------------------------------------------ mudar de etapa */
-    async setStage(id, stage, lossReasonId) {
-      const patch = { stage };
-      if (stage === "Perdido" && lossReasonId) patch.loss_reason_id = lossReasonId;
-      const { error } = await window.sb.from("projects").update(patch).eq("id", id);
-      if (error) throw error;
-    },
+  const html = `
+  <div style="display:grid;grid-template-columns:212px 1fr;min-height:100vh">
+    ${sidebarHtml(v, nav)}
+    <main style="padding:34px 40px 60px;display:flex;flex-direction:column;gap:26px;min-width:0">
+      <header style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:23px;font-weight:600;margin:0;letter-spacing:-.5px">${meta[v][0]}</h1>
+          <div style="font-size:12.5px;color:var(--muted);margin-top:5px">${meta[v][1]}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="position:relative;display:flex;align-items:center">
+            <span style="${ico(P.search, 14)};position:absolute;left:11px;color:var(--muted2);pointer-events:none"></span>
+            <input id="searchInput" placeholder="Buscar" value="${esc(state.query)}" style="border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px 8px 32px;font-size:12.5px;color:var(--text);outline:none;width:200px" />
+          </div>
+          <button data-action="toggleTheme" title="Mudar tema" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:8px;cursor:pointer" class="hoverable">
+            <span style="${ico(state.dark ? P.sun : P.moon, 16)}"></span>
+          </button>
+          <button data-action="openModal" style="display:flex;align-items:center;gap:7px;background:linear-gradient(140deg,var(--accent),var(--accent2));border:0;color:#1A1206;font-weight:600;font-size:12.5px;padding:9px 15px;border-radius:8px;cursor:pointer">
+            <span style="${ico(P.plus, 13)}"></span>Novo lead
+          </button>
+        </div>
+      </header>
+      ${bannerHtml}
+      ${body}
+    </main>
+  </div>
+  ${newLeadModal()}
+  ${editClientModal()}
+  ${leadEditModal()}
+  `;
 
-    /* ---------------------------------------------------------- motivos */
-    async lossReasons() {
-      const { data } = await window.sb.from("loss_reasons").select("id,label").order("id");
-      return data || [];
-    },
-
-    /* ------------------------------------------------------- novo projeto */
-    /* form: ver EMPTY_FORM em index.html — segue o checklist do guia
-       comercial de cadastro de leads (empresa, contato, origem, tipo de
-       oportunidade, qualificação e próxima ação) */
-    async createProject(form) {
-      const ownerId = window.me?.id || null;
-      let clientId = null;
-
-      if (form.clientName?.trim()) {
-        const { data: cli, error: e1 } = await window.sb
-          .from("clients")
-          .insert({
-            name: form.clientName.trim(),
-            kind: form.kind || "Residencial",
-            doc: form.doc || null,
-            contact_name: form.contactName || null,
-            contact_role: form.contactRole || null,
-            whatsapp: form.whatsapp || null,
-            phone: form.whatsapp || null,
-            email: form.email || null,
-            address: form.address || null,
-            segment: form.segment || null,
-            city: form.city || null,
-            uf: (form.uf || "").toUpperCase().slice(0, 2) || null,
-            is_partner: form.classification === "Parceria",
-            owner_id: ownerId,
-          })
-          .select("id")
-          .single();
-        if (e1) throw e1;
-        clientId = cli.id;
+  const app = document.getElementById("app");
+  const active2 = document.activeElement;
+  const focusInfo = active2 && active2.dataset ? {
+    bind: active2.dataset.bind, key: active2.dataset.key, id: active2.id,
+    selStart: active2.selectionStart, selEnd: active2.selectionEnd,
+  } : null;
+  app.innerHTML = html;
+  if (focusInfo && (focusInfo.key || focusInfo.id)) {
+    const el = focusInfo.id ? app.querySelector("#" + focusInfo.id) : app.querySelector(`[data-bind="${focusInfo.bind}"][data-key="${focusInfo.key}"]`);
+    if (el) {
+      el.focus();
+      if (typeof focusInfo.selStart === "number" && el.setSelectionRange) {
+        try { el.setSelectionRange(focusInfo.selStart, focusInfo.selEnd); } catch (e) {}
       }
+    }
+  }
+}
 
-      const { data, error } = await window.sb
-        .from("projects")
-        .insert({
-          title: form.title.trim(),
-          client_id: clientId,
-          owner_id: ownerId,
-          stage: form.stage || "Lead",
-          value_brl: Number(String(form.value).replace(/\./g, "").replace(",", ".")) || 0,
-          source: form.source || null,
-          city: form.city || null,
-          uf: (form.uf || "").toUpperCase().slice(0, 2) || null,
-          opportunity_type: form.opportunityType || "Cliente",
-          first_contact_at: form.firstContact || new Date().toISOString().slice(0, 10),
-          avg_bill_brl: form.avgBill ? Number(String(form.avgBill).replace(/\./g, "").replace(",", ".")) : null,
-          has_solar: form.hasSolar === "Sim" ? true : form.hasSolar === "Não" ? false : null,
-          deadline: form.deadline || null,
-          need_detail: form.needDetail || null,
-          last_contact_at: new Date().toISOString(),
-          last_contact_channel: form.channel || null,
-          last_contact_note: form.contactNote || null,
-          next_action: form.nextAction || null,
-          next_action_at: form.nextActionAt || null,
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
-      return data.id;
-    },
+/* ---------------------------------------------------------- dashboard */
+function dashHtml({ deals, at, sum, closedTotal, active, lostList }) {
+  const kpis = [
+    ["Projetos fechados", compact(closedTotal), at("Fechado").length + " no total", 1, P.money],
+    ["Pipeline ativo", compact(sum(active)), active.length + " projetos em andamento", 0, P.layers],
+    ["Projetos perdidos", String(lostList.length), compact(sum(lostList)) + " recuperáveis", -1, P.check],
+    ["Taxa de fechamento", deals.length ? Math.round(at("Fechado").length / deals.length * 100) + "%" : "0%", "Fechados sobre o total", 0, P.target],
+  ];
 
-    /* --------------------------------------------------- editar cliente */
-    /* Atualiza o MESMO registro (nunca cria um novo cliente).
-       form: { name, kind, doc, contactName, contactRole, whatsapp, email,
-               address, segment, city, uf, classification } */
-    async updateClient(clientId, form) {
-      const { error } = await window.sb
-        .from("clients")
-        .update({
-          name: form.name.trim(),
-          kind: form.kind || "Residencial",
-          doc: form.doc || null,
-          contact_name: form.contactName || null,
-          contact_role: form.contactRole || null,
-          whatsapp: form.whatsapp || null,
-          phone: form.whatsapp || null,
-          email: form.email || null,
-          address: form.address || null,
-          segment: form.segment || null,
-          city: form.city || null,
-          uf: (form.uf || "").toUpperCase().slice(0, 2) || null,
-          is_partner: form.classification === "Parceria",
-        })
-        .eq("id", clientId);
-      if (error) throw error;
-    },
-
-    /* --------------------------------------------------- comissionamento */
-    async listCommissions() {
-      const { data, error } = await window.sb
-        .from("commissions")
-        .select(`
-          id, project_id, base_brl, rate, amount_brl, status, period,
-          projects ( title, clients ( name, is_partner ) ),
-          consultants ( name )
-        `)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data || []).map((c) => ({
-        id: c.id,
-        projectId: c.project_id,
-        project: c.projects?.title || "—",
-        client: c.projects?.clients?.name || "—",
-        isPartner: !!c.projects?.clients?.is_partner,
-        consultant: c.consultants?.name || "—",
-        base: Number(c.base_brl) || 0,
-        rate: Number(c.rate) || 0,
-        amount: Number(c.amount_brl) || 0,
-        status: c.status,
-      }));
-    },
-
-    /* status: "Em análise" | "Aprovado" | "Cancelado" */
-    async setCommissionStatus(commissionId, status) {
-      const { error } = await window.sb
-        .from("commissions")
-        .update({ status })
-        .eq("id", commissionId);
-      if (error) throw error;
-    },
-    /* --------------------------------------------------- editar projeto/lead */
-    async updateProject(id, form) {
-      const { error } = await window.sb
-        .from("projects")
-        .update({
-          title: form.title.trim(),
-          value_brl: Number(String(form.value).replace(/\./g, "").replace(",", ".")) || 0,
-          source: form.source || null,
-          city: form.city || null,
-          uf: (form.uf || "").toUpperCase().slice(0, 2) || null,
-          opportunity_type: form.opportunityType || "Cliente",
-          avg_bill_brl: form.avgBill ? Number(String(form.avgBill).replace(/\./g, "").replace(",", ".")) : null,
-          has_solar: form.hasSolar === "Sim" ? true : form.hasSolar === "Não" ? false : null,
-          deadline: form.deadline || null,
-          need_detail: form.needDetail || null,
-          next_action: form.nextAction || null,
-          next_action_at: form.nextActionAt || null,
-        })
-        .eq("id", id);
-      if (error) throw error;
-    },
+  const byKey = (arr, key) => arr.reduce((m, d) => { const k = d[key] || "—"; m[k] = (m[k] || 0) + d.value; return m; }, {});
+  const pctList = (obj) => {
+    const tot = Object.values(obj).reduce((a, b) => a + b, 0) || 1;
+    return Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, val]) => [name, Math.round(val / tot * 100)]);
   };
+  const srcList = pctList(byKey(deals, "source"));
 
-  window.CRM = CRM;
-})();
+  const goalPct = Math.min(100, Math.round(closedTotal / 1800000 * 100));
+  const C = 2 * Math.PI * 56;
+  const frac = Math.min(1, closedTotal / 1800000);
+  const goalArc = `stroke-dasharray:${C};stroke-dashoffset:${C * (1 - frac)}`;
+
+  const vals = STAGES.map(s => sum(at(s)));
+  const max = Math.max(...vals, 1);
+  const stepX = 360 / (vals.length - 1);
+  const pts = vals.map((val, i) => [Math.round(i * stepX), Math.round(140 - (val / max) * 130)]);
+  const trendPoints = pts.map(([x, y]) => `${x},${y}`).join(" ");
+  const trendArea = `0,140 ${trendPoints} 360,140`;
+
+  const list = srcList.length ? srcList : [["Sem dados", 100]];
+  const CD = 2 * Math.PI * 46;
+  let acc = 0;
+  const segs = list.map(([name, p], i) => {
+    const fr = p / 100;
+    const dash = `${CD * fr} ${CD}`;
+    const offset = -acc * CD;
+    acc += fr;
+    const color = srcList.length ? DONUT_COLORS[i % DONUT_COLORS.length] : "var(--line)";
+    return { name, pct: p, color, dash, offset };
+  });
+
+  return `
+  <div style="display:flex;flex-direction:column;gap:26px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+      ${kpis.map(([label, value, delta, dir, icon]) => `
+        <div style="background:var(--surface);padding:20px 22px">
+          <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)"><span style="${ico(icon, 13)}"></span>${esc(label)}</div>
+          <div style="font-size:24px;font-weight:600;margin:8px 0 5px;letter-spacing:-.7px">${esc(value)}</div>
+          <div style="font-size:11.5px;color:${dir === 1 ? "var(--okFg)" : dir === -1 ? "var(--badFg)" : "var(--muted2)"}">${esc(delta)}</div>
+        </div>`).join("")}
+    </div>
+
+    <div style="display:grid;grid-template-columns:.9fr 1.4fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;align-items:stretch">
+      <section style="background:var(--surface);padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px">
+        <div style="font-size:13px;font-weight:600;align-self:flex-start">Meta do mês</div>
+        <div style="position:relative;width:132px;height:132px">
+          <svg viewBox="0 0 132 132" style="transform:rotate(-90deg)">
+            <circle cx="66" cy="66" r="56" fill="none" stroke="var(--line)" stroke-width="12" />
+            <circle cx="66" cy="66" r="56" fill="none" stroke="url(#goalGrad)" stroke-width="12" stroke-linecap="round" style="${goalArc};transition:stroke-dashoffset .3s" />
+            <defs><linearGradient id="goalGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="var(--accent)" /><stop offset="100%" stop-color="var(--accent2)" /></linearGradient></defs>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div style="font-size:20px;font-weight:600;letter-spacing:-.5px">${goalPct}%</div>
+            <div style="font-size:10px;color:var(--muted2)">da meta</div>
+          </div>
+        </div>
+        <div style="font-size:11.5px;color:var(--text3);text-align:center">${compact(closedTotal)} de R$ 1,80 M</div>
+      </section>
+
+      <section style="background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font-size:13px;font-weight:600">Valor por etapa do funil</div>
+          <div style="font-size:11px;color:var(--muted2)">em milhares (R$ K)</div>
+        </div>
+        <svg viewBox="0 0 360 150" style="width:100%;height:150px;overflow:visible">
+          ${[0, 1, 2, 3].map(i => `<line x1="0" y1="${10 + i * 43}" x2="360" y2="${10 + i * 43}" stroke="var(--line)" stroke-width="1" />`).join("")}
+          <polyline points="${trendPoints}" fill="none" stroke="url(#trendGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          <polygon points="${trendArea}" fill="url(#trendFill)" opacity="0.5" />
+          <defs>
+            <linearGradient id="trendGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="var(--accent)" /><stop offset="100%" stop-color="var(--accent2)" /></linearGradient>
+            <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity="0.35" /><stop offset="100%" stop-color="var(--accent)" stop-opacity="0" /></linearGradient>
+          </defs>
+          ${pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.5" fill="var(--surface)" stroke="var(--accent)" stroke-width="2" />`).join("")}
+        </svg>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">
+          ${STAGES.map(s => `<div style="text-align:center"><div style="font-size:10.5px;font-weight:500;color:var(--text2)">${compact(sum(at(s)))}</div><div style="font-size:10px;color:var(--muted2);margin-top:2px">${s.slice(0, 5)}</div></div>`).join("")}
+        </div>
+      </section>
+
+      <section style="background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:16px;align-items:center">
+        <div style="font-size:13px;font-weight:600;align-self:flex-start">Origem dos leads</div>
+        <svg viewBox="0 0 120 120" style="width:120px;height:120px">
+          ${segs.map(d => `<circle cx="60" cy="60" r="46" fill="none" stroke="${d.color}" stroke-width="16" stroke-dasharray="${d.dash}" stroke-dashoffset="${d.offset}" transform="rotate(-90 60 60)" />`).join("")}
+          <circle cx="60" cy="60" r="30" fill="var(--surface)" />
+        </svg>
+        <div style="display:flex;flex-direction:column;gap:9px;width:100%">
+          ${segs.map(s => `
+            <div style="display:flex;align-items:center;gap:8px;font-size:11.5px">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:99px;background:${s.color}"></span>
+              <span style="flex:1;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.name)}</span>
+              <span style="color:var(--muted2);font-weight:500">${s.pct}%</span>
+            </div>`).join("")}
+        </div>
+      </section>
+    </div>
+
+    <section>
+      <div style="font-size:13px;font-weight:600;margin-bottom:14px">Agenda técnica</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+        ${[
+          ["Próximas visitas", P.pin, active.length + " projetos ativos", "Acompanhe pelo funil"],
+          ["Homologações", P.file, at("Fechado").length + " projetos fechados", "Consolidados na ficha do cliente"],
+          ["Reciclagem", P.bolt, lostList.length + " leads a retomar", compact(sum(lostList)) + " em valor recuperável"],
+        ].map(([when, icon, title, who]) => `
+          <div style="background:var(--surface);padding:18px 20px">
+            <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted2)"><span style="${ico(icon, 12)}"></span>${esc(when)}</div>
+            <div style="font-size:13px;font-weight:500;margin:6px 0 4px">${esc(title)}</div>
+            <div style="font-size:11.5px;color:var(--muted)">${esc(who)}</div>
+          </div>`).join("")}
+      </div>
+    </section>
+  </div>`;
+}
+
+/* -------------------------------------------------------------- funil */
+function funnelHtml({ at, sum }) {
+  const columns = STAGES.map((name, i) => {
+    const cards = at(name);
+    const lineStyle = `height:2px;border-radius:99px;background:${name === "Perdido" ? "var(--line2)" : "linear-gradient(90deg,var(--accent),var(--accent2))"};opacity:${name === "Perdido" ? 1 : 1 - i * 0.13};box-shadow:${name === "Perdido" ? "none" : "var(--glow)"}`;
+
+    const cardsHtml = cards.map(c => {
+      const actionList = name === "Perdido"
+        ? [["Reciclar", "recycle", P.recycle]]
+        : [
+            ...(i > 0 ? [["Voltar", "moveBack", P.arrowLeft]] : []),
+            ...(name !== "Fechado" ? [["Avançar", "moveNext", P.arrow]] : [["Ver cliente", "goClients", P.user]]),
+            ...(name !== "Fechado" ? [["Perdi", "moveLost", P.x]] : []),
+          ];
+      const actionsHtml = actionList.map(([label, action, icon]) => `
+        <button data-action="${action}" data-id="${c.id}" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer" class="hoverable">
+          <span style="${ico(icon, 12)}"></span>${esc(label)}
+        </button>`).join("");
+
+      const stageOptions = STAGES.map(s => `<option value="${s}" ${s === name ? "selected" : ""}>${s}</option>`).join("");
+
+      return `
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+          <div style="font-size:12.5px;font-weight:500;line-height:1.35">${esc(c.name)}</div>
+          <button data-action="editLead" data-id="${c.id}" title="Editar lead" style="flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border:1px solid var(--line);background:var(--surface);border-radius:6px;cursor:pointer;color:var(--muted2)" class="hoverable">
+            <span style="${ico(P.file, 11)}"></span>
+          </button>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-top:8px">${brl(c.value)}</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted2);margin-top:8px"><span style="${ico(P.user, 11)}"></span>${esc(c.owner)}</div>
+        ${c.reason ? `<div style="font-size:10.5px;color:var(--accFg);margin-top:6px">${esc(c.reason)}</div>` : ""}
+        <select data-action="setStage" data-id="${c.id}" style="width:100%;margin-top:10px;border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:6px 8px;font-size:11.5px;color:var(--text2);outline:none;cursor:pointer">${stageOptions}</select>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${actionsHtml}</div>
+      </div>`;
+    }).join("") || `<div style="font-size:11.5px;color:var(--faint);padding:14px 2px">Sem projetos nesta etapa</div>`;
+
+    return `
+    <div style="display:flex;flex-direction:column;gap:10px;min-height:400px">
+      <div style="display:flex;flex-direction:column;gap:6px;padding-bottom:9px;border-bottom:1px solid var(--line)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:12.5px;font-weight:600;color:var(--text2)">${name}</div>
+          <div style="font-size:11px;color:var(--muted2)">${cards.length}</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted2)">${compact(sum(cards))}</div>
+        <div style="${lineStyle}"></div>
+      </div>
+      ${cardsHtml}
+    </div>`;
+  }).join("");
+
+  return `
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:grid;grid-template-columns:repeat(6,minmax(160px,1fr));gap:14px;align-items:start;overflow-x:auto;padding-bottom:6px">${columns}</div>
+    <div style="font-size:11.5px;color:var(--muted2);border-top:1px solid var(--line);padding-top:14px">Ao mover para <b style="font-weight:600;color:var(--text2)">Fechado</b>, o projeto é consolidado na ficha do cliente e entra na apuração de comissão (5%). Em <b style="font-weight:600;color:var(--text2)">Perdido</b>, vai para a reciclagem de leads.</div>
+  </div>`;
+}
+
+/* ----------------------------------------------------------- clientes */
+function clientsHtml({ closed, closedTotal }) {
+  const rows = closed.map(c => `
+    <div style="display:grid;grid-template-columns:1.7fr 1fr .9fr .8fr .8fr .7fr 70px;gap:12px;align-items:center;padding:15px 20px;border-bottom:1px solid var(--soft);font-size:12.5px" class="hoverable">
+      <div><div style="font-weight:500">${esc(c.name)}</div><div style="font-size:11px;color:var(--muted2);margin-top:2px">${esc(c.type)}</div></div>
+      <div style="color:var(--text3)">${esc(c.city)}</div>
+      <div style="font-weight:500">${brl(c.value)}</div>
+      <div><span style="${chip("var(--okBg)", "var(--okFg)")}">Ativo</span></div>
+      <div style="color:var(--text3)">${esc(c.owner)}</div>
+      <div><span style="${c.isPartner ? chip("var(--accSoft)", "var(--accFg)") : chip("var(--soft)", "var(--text3)")}">${c.isPartner ? "Parceria" : "Cliente"}</span></div>
+      <div>
+        <button data-action="editClient" data-id="${c.id}" title="Editar cliente" style="display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;padding:6px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer" class="hoverable">
+          <span style="${ico(P.file, 12)}"></span>Editar
+        </button>
+      </div>
+    </div>`).join("");
+
+  return `
+  <section style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)">
+    <div style="display:grid;grid-template-columns:1.7fr 1fr .9fr .8fr .8fr .7fr 70px;gap:12px;font-size:11px;color:var(--muted2);padding:13px 20px;border-bottom:1px solid var(--line)">
+      <div>Cliente</div><div>Cidade / UF</div><div>Valor do projeto</div><div>Situação</div><div>Responsável</div><div>Classificação</div><div></div>
+    </div>
+    ${rows || `<div style="padding:26px 20px;font-size:12.5px;color:var(--faint)">Nenhum projeto fechado ainda.</div>`}
+    <div style="padding:14px 20px;font-size:11.5px;color:var(--muted2);display:flex;gap:26px">
+      <span>${closed.length} clientes</span><span>Valor total dos projetos ${compact(closedTotal)}</span>
+    </div>
+  </section>`;
+}
+
+/* ----------------------------------------------------------- perdidos */
+function lostHtml({ lostList, sum }) {
+  const reasonCount = lostList.reduce((m, d) => { const k = d.reason || "Não informado"; m[k] = (m[k] || 0) + 1; return m; }, {});
+  const reasonList = Object.entries(reasonCount).sort((a, b) => b[1] - a[1]).map(([name, n]) => [name, Math.round(n / (lostList.length || 1) * 100)]);
+
+  const rows = lostList.map(l => `
+    <div style="display:grid;grid-template-columns:1.6fr .9fr 1.2fr .8fr .9fr 1fr;gap:12px;align-items:center;padding:15px 20px;border-bottom:1px solid var(--soft);font-size:12.5px" class="hoverable">
+      <div><div style="font-weight:500">${esc(l.name)}</div><div style="font-size:11px;color:var(--muted2);margin-top:2px">${esc(l.owner)}</div></div>
+      <div style="font-weight:500">${brl(l.value)}</div>
+      <div style="color:var(--text3)">${esc(l.reason || "Não informado")}</div>
+      <div style="color:var(--muted2)">${esc(l.date || "—")}</div>
+      <div style="color:var(--text3)">${esc(l.recall || "A definir")}</div>
+      <div style="display:flex;gap:7px;justify-content:flex-end">
+        <button data-action="recycle" data-id="${l.id}" style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;padding:7px 12px;border-radius:7px;border:1px solid var(--accLine);background:var(--accSoft);color:var(--accFg);cursor:pointer">
+          <span style="${ico(P.recycle, 12)}"></span>Reciclar lead
+        </button>
+      </div>
+    </div>`).join("");
+
+  return `
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+      ${[
+        ["Projetos em reciclagem", String(lostList.length)],
+        ["Valor recuperável", compact(sum(lostList))],
+        ["Ticket médio perdido", lostList.length ? compact(Math.round(sum(lostList) / lostList.length)) : "R$ 0 K"],
+      ].map(([label, value]) => `<div style="background:var(--surface);padding:20px 22px"><div style="font-size:11.5px;color:var(--muted)">${label}</div><div style="font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.6px">${value}</div></div>`).join("")}
+    </div>
+    <section style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)">
+      <div style="display:grid;grid-template-columns:1.6fr .9fr 1.2fr .8fr .9fr 1fr;gap:12px;font-size:11px;color:var(--muted2);padding:13px 20px;border-bottom:1px solid var(--line)">
+        <div>Projeto perdido</div><div>Valor</div><div>Motivo</div><div>Perdida em</div><div>Retomar</div><div></div>
+      </div>
+      ${rows || `<div style="padding:26px 20px;font-size:12.5px;color:var(--faint)">Nenhuma lead na reciclagem.</div>`}
+    </section>
+    <section>
+      <div style="font-size:13px;font-weight:600;margin-bottom:14px">Principais motivos de perda</div>
+      <div style="display:flex;flex-direction:column;gap:12px;max-width:520px">
+        ${reasonList.map(([name, p]) => `
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:180px;font-size:12.5px;color:var(--text2)">${esc(name)}</div>
+            <div style="flex:1;height:2px;background:var(--line)"><div style="width:${p}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div></div>
+            <div style="width:40px;text-align:right;font-size:12px;color:var(--muted)">${p}%</div>
+          </div>`).join("")}
+      </div>
+    </section>
+  </div>`;
+}
+
+/* ------------------------------------------------------ comissionamento */
+function commHtml() {
+  const STATUS_OPTS = ["Em análise", "Aprovado", "Cancelado"];
+  const STATUS_STYLE = {
+    "Em análise": "color:var(--warnFg);background:var(--warnBg)",
+    "Aprovado": "color:var(--okFg);background:var(--okBg)",
+    "Cancelado": "color:var(--badFg);background:var(--badBg)",
+  };
+  const commData = state.commissions || [];
+  const commActive = commData.filter(c => c.status !== "Cancelado");
+  const commRevenue = compact(commData.reduce((t, c) => t + c.base, 0));
+  const commTotal = brl(Math.round(commActive.reduce((t, c) => t + c.amount, 0)));
+  const cancelledCount = commData.filter(c => c.status === "Cancelado").length;
+
+  const rows = commData.map(c => `
+    <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 140px;gap:14px;align-items:center;padding:15px 20px;border-bottom:1px solid var(--soft);font-size:12.5px" class="hoverable">
+      <div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.project)}</div>
+      <div style="color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.client)}</div>
+      <div style="color:var(--text3)">${esc(abbr(c.consultant))}</div>
+      <div style="color:var(--text3);white-space:nowrap">${brl(c.base)}</div>
+      <div style="font-weight:600;white-space:nowrap">${brl(Math.round(c.amount))}</div>
+      <div>
+        <select data-action="setCommStatus" data-id="${c.id}" style="width:100%;border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:11.5px;outline:none;cursor:pointer;${STATUS_STYLE[c.status] || ""}">
+          ${STATUS_OPTS.map(s => `<option value="${s}" ${s === c.status ? "selected" : ""}>${s}</option>`).join("")}
+        </select>
+      </div>
+    </div>`).join("");
+
+  return `
+  <div style="display:flex;flex-direction:column;gap:26px">
+    <section style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);min-width:0">
+      <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 140px;gap:14px;font-size:11px;color:var(--muted2);padding:13px 20px;border-bottom:1px solid var(--line)">
+        <div>Projeto</div><div>Cliente</div><div>Responsável</div><div>Valor do projeto</div><div>Comissão</div><div>Status</div>
+      </div>
+      ${rows || `<div style="padding:26px 20px;font-size:12.5px;color:var(--faint)">Nenhuma comissão apurada ainda.</div>`}
+      <div style="display:flex;gap:28px;padding:15px 20px;font-size:11.5px;color:var(--muted2);white-space:nowrap;flex-wrap:wrap">
+        <span>Valor dos projetos <b style="color:var(--text);font-weight:600">${commRevenue}</b></span>
+        <span>Total comissões (Em análise + Aprovado) <b style="color:var(--text);font-weight:600">${commTotal}</b></span>
+        <span style="color:var(--badFg)">Canceladas: ${cancelledCount}</span>
+      </div>
+    </section>
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:13px;font-weight:600">Regra de comissionamento</div>
+      <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);padding:18px 20px;max-width:320px">
+        <div style="font-size:28px;font-weight:600;letter-spacing:-.7px;background:linear-gradient(140deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent">5%</div>
+        <div style="font-size:12.5px;font-weight:500;margin-top:7px">Comissão do projeto</div>
+        <div style="font-size:11.5px;color:var(--muted2);margin-top:3px;line-height:1.45">Aplicada sobre o valor total quando o cliente aprova e o projeto é confirmado como vendido (etapa Fechado)</div>
+      </div>
+    </section>
+  </div>`;
+}
+
+/* ---------------------------------------------------------- relatórios */
+function reportsHtml({ deals, at, closed, closedTotal, active }) {
+  const n = s => at(s).length;
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const tot = deals.length;
+  const conv = [
+    ["Lead → Qualif.", pct(n("Qualificado"), n("Lead") + n("Qualificado"))],
+    ["Qualif. → Proposta", pct(n("Proposta"), n("Qualificado") + n("Proposta"))],
+    ["Proposta → Negoc.", pct(n("Negociação"), n("Proposta") + n("Negociação"))],
+    ["Negoc. → Fechado", pct(n("Fechado"), n("Negociação") + n("Fechado"))],
+    ["Total → Fechado", pct(n("Fechado"), tot)],
+  ];
+  const regionMap = closed.reduce((m, d) => { const k = d.city || "—"; m[k] = (m[k] || 0) + d.value; return m; }, {});
+  const regionList = Object.entries(regionMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  const reportCards = [
+    ["Ticket médio", closed.length ? compact(Math.round(closedTotal / closed.length)) : "R$ 0 K", "Média dos projetos fechados"],
+    ["Valor em negociação", compact(active.reduce((t, d) => t + d.value, 0)), active.length + " projetos no funil"],
+    ["Comissão apurada", brl(Math.round(closedTotal * 0.05)), "5% sobre os fechados"],
+  ];
+
+  return `
+  <div style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start">
+      <section>
+        <div style="font-size:13px;font-weight:600;margin-bottom:18px">Conversão por etapa</div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          ${conv.map(([name, p]) => `
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:132px;font-size:12.5px;color:var(--text2)">${esc(name)}</div>
+              <div style="flex:1;height:2px;background:var(--line)"><div style="width:${p}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div></div>
+              <div style="width:44px;text-align:right;font-size:12.5px;font-weight:500">${p}%</div>
+            </div>`).join("")}
+        </div>
+      </section>
+      <section>
+        <div style="font-size:13px;font-weight:600;margin-bottom:18px">Desempenho por região</div>
+        <div style="display:flex;flex-direction:column;gap:0">
+          ${regionList.map(([name, val]) => `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;border-bottom:1px solid var(--line);padding:11px 0"><span style="color:var(--text2)">${esc(name)}</span><b style="font-weight:600">${compact(val)}</b></div>`).join("") || `<div style="font-size:12.5px;color:var(--faint);padding:11px 0">Sem dados de região.</div>`}
+        </div>
+      </section>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+      ${reportCards.map(([label, value, note]) => `<div style="background:var(--surface);padding:20px 22px"><div style="font-size:11.5px;color:var(--muted)">${label}</div><div style="font-size:24px;font-weight:600;margin:8px 0 5px;letter-spacing:-.7px">${value}</div><div style="font-size:11.5px;color:var(--muted)">${note}</div></div>`).join("")}
+    </div>
+  </div>`;
+}
+
+/* ============================================================ eventos */
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-action]");
+  if (!t) return;
+  const action = t.dataset.action;
+  const id = t.dataset.id;
+  const deal = id ? state.deals.find(d => d.id === id) : null;
+
+  switch (action) {
+    case "setView": setState({ view: t.dataset.view }); break;
+    case "toggleTheme": setState({ dark: !state.dark }); break;
+    case "openModal": setState({ modalOpen: true, modalMsg: "" }); break;
+    case "closeModal": setState({ modalOpen: false, modalMsg: "" }); break;
+    case "saveProject": saveProject(); break;
+    case "closeEdit": closeEdit(); break;
+    case "saveEdit": saveEdit(); break;
+    case "closeLeadEdit": closeLeadEdit(); break;
+    case "saveLeadEdit": saveLeadEdit(); break;
+    case "signOut": window.signOut && window.signOut(); break;
+    case "moveNext": if (deal) move(id, STAGES[Math.min(STAGES.length - 1, STAGES.indexOf(deal.stage) + 1)]); break;
+    case "moveBack": if (deal) move(id, STAGES[Math.max(0, STAGES.indexOf(deal.stage) - 1)]); break;
+    case "moveLost": move(id, "Perdido"); break;
+    case "recycle": recycle(id); break;
+    case "goClients": setState({ view: "clients" }); break;
+    case "editLead": if (deal) openLeadEdit(deal); break;
+    case "editClient": if (deal) openEdit(deal); break;
+  }
+});
+
+document.addEventListener("change", (e) => {
+  const t = e.target;
+  if (t.dataset && t.dataset.action === "setStage") { move(t.dataset.id, t.value); return; }
+  if (t.dataset && t.dataset.action === "setCommStatus") { setCommissionStatus(t.dataset.id, t.value); return; }
+  if (t.dataset && t.dataset.bind && t.dataset.key) {
+    const target = t.dataset.bind === "form" ? state.form : t.dataset.bind === "editForm" ? state.editForm : state.leadEditForm;
+    target[t.dataset.key] = t.value;
+    render();
+  }
+});
+
+document.addEventListener("input", (e) => {
+  const t = e.target;
+  if (t.id === "searchInput") { state.query = t.value; render(); return; }
+  if (t.dataset && t.dataset.bind && t.dataset.key) {
+    const target = t.dataset.bind === "form" ? state.form : t.dataset.bind === "editForm" ? state.editForm : state.leadEditForm;
+    target[t.dataset.key] = t.value;
+    // não chama render() a cada tecla para não perder o foco;
+    // o valor já está salvo no objeto de estado e será usado ao salvar.
+  }
+});
+
+/* =========================================================== bootstrap */
+render();
+if (window.onAuthReady) window.onAuthReady(() => load());
+else setState({ loading: false, err: "auth.js não carregado." });
+</script>
+</body>
+</html>
