@@ -1,274 +1,1073 @@
-/* ------------------------------------------------------------------
-   auth.js — cliente Supabase + tela de login (M4 Solar)
-   Requer config.js carregado ANTES deste arquivo.
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM Painéis Solares</title>
+<script src="./config.js"></script>
+<script src="./support.js"></script>
+<script src="./auth.js"></script>
+<script src="./data.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *{box-sizing:border-box}
+  :root{--bg:#FAFAF8;--surface:#ffffff;--hover:#FDFCF9;--line:#E8E8E4;--line2:#D2D2CC;--soft:#F3F3EF;--bar:#E6E6E1;--bar2:#C8C8C2;--text:#16181A;--textHover:#2E3135;--text2:#3A3D42;--text3:#5C5F64;--muted:#86898E;--muted2:#9A9DA2;--faint:#B2B5B9;--accent:#F59300;--accent2:#FF6A00;--glow:0 0 0 1px rgba(245,147,0,.30);--accSoft:#FFF6E6;--accSoft2:#FFEECC;--accLine:#F3D6A0;--accFg:#9A4A05;--okBg:#EDF6F0;--okFg:#28794A;--badBg:#FCEEEC;--badFg:#A63A31;--warnBg:#FBF3E2;--warnFg:#7C6522}
+  :root[data-theme="dark"]{--bg:#131313;--surface:#1A1A1A;--hover:#212121;--line:#2C2C2C;--line2:#3D3D3D;--soft:#242424;--bar:#2E2E2E;--bar2:#454545;--text:#F2F2F0;--textHover:#DADAD6;--text2:#C6C6C2;--text3:#9C9C98;--muted:#8A8A86;--muted2:#757571;--faint:#5A5A57;--accent:#FFB300;--accent2:#FF7A18;--glow:0 0 24px rgba(255,140,0,.22);--accSoft:#241A08;--accSoft2:#2E2109;--accLine:#4B3410;--accFg:#FFC24D;--okBg:#122016;--okFg:#57D68C;--badBg:#241413;--badFg:#FF8A7A;--warnBg:#241D0C;--warnFg:#FFD37A}
+  body{margin:0;background:var(--bg);font-family:'Inter Tight',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:var(--text)}
+  a{color:var(--accFg);text-decoration:none}
+  a:hover{color:var(--accFg)}
+  ::-webkit-scrollbar{width:7px;height:7px}
+  ::-webkit-scrollbar-thumb{background:#DFDFD9;border-radius:8px}
+  select option{background:var(--surface);color:var(--text)}
+</style>
+</helmet>
+<div style="display:grid;grid-template-columns:212px 1fr;min-height:100vh">
+  <aside style="border-right:1px solid var(--line);padding:24px 14px;display:flex;flex-direction:column;gap:28px;position:sticky;top:0;height:100vh;background:var(--bg)">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 8px">
+      <div style="width:9px;height:9px;border-radius:99px;background:linear-gradient(140deg,var(--accent),var(--accent2));box-shadow:var(--glow)"></div>
+      <div style="font-size:14px;font-weight:600;letter-spacing:-.2px">M4 Solar</div>
+    </div>
+    <nav style="display:flex;flex-direction:column;gap:2px">
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="6">
+        <button onClick="{{ item.go }}" style="{{ item.style }}" style-hover="background:var(--soft)">
+          <span style="display:flex;align-items:center;gap:9px;min-width:0">
+            <span style="{{ item.iconStyle }}"></span>
+            <span>{{ item.label }}</span>
+          </span>
+          <span style="{{ item.badgeStyle }}">{{ item.badge }}</span>
+        </button>
+      </sc-for>
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 4px">
+        <div style="{{ avatarStyle }}">{{ userInitial }}</div>
+        <div style="min-width:0;flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ userName }}</div>
+          <div style="font-size:11px;font-weight:500;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ userRole }}</div>
+        </div>
+        <button onClick="{{ signOut }}" title="Sair" style="flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:26px;height:26px;border:0;background:transparent;cursor:pointer;color:var(--muted)" style-hover="color:var(--accent)">
+          <span style="{{ logoutIconStyle }}"></span>
+        </button>
+      </div>
+    </div>
+  </aside>
 
-   Expõe:
-     window.sb          -> cliente Supabase
-     window.currentUser -> { id, email }
-     window.me          -> linha de public.consultants do usuário logado
-     window.signOut()
-     window.onAuthReady(cb)
-------------------------------------------------------------------- */
-(function () {
-  const CDN = "https://esm.sh/@supabase/supabase-js@2";
-  const readyCbs = [];
-  window.onAuthReady = (cb) => {
-    if (window.me) cb(window.me);
-    else readyCbs.push(cb);
-  };
+  <main style="padding:34px 40px 60px;display:flex;flex-direction:column;gap:26px;min-width:0">
+    <header style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      <div>
+        <h1 style="font-size:23px;font-weight:600;margin:0;letter-spacing:-.5px">{{ title }}</h1>
+        <div style="font-size:12.5px;color:var(--muted);margin-top:5px">{{ subtitle }}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div style="position:relative;display:flex;align-items:center">
+          <span style="{{ searchIconStyle }}"></span>
+          <input placeholder="Buscar" value="{{ query }}" onInput="{{ setQuery }}" style="border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px 8px 32px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none;width:200px" />
+        </div>
+        <button onClick="{{ toggleTheme }}" title="{{ themeLabel }}" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:8px;cursor:pointer;flex:0 0 auto" style-hover="background:var(--soft);color:var(--text)">
+          <span style="{{ themeIconStyle }}"></span>
+        </button>
+        <button onClick="{{ openModal }}" style="display:flex;align-items:center;gap:7px;background:linear-gradient(140deg,var(--accent),var(--accent2));border:0;color:#1A1206;font-weight:600;font-size:12.5px;padding:9px 15px;border-radius:8px;font-family:inherit;cursor:pointer;box-shadow:var(--glow)" style-hover="filter:brightness(1.08)">
+          <span style="{{ plusIconStyle }}"></span>Novo lead
+        </button>
+      </div>
+    </header>
 
-  const BRAND = window.APP_NAME || "M4 Solar";
+    <sc-if value="{{ banner }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ bannerStyle }}">{{ banner }}</div>
+    </sc-if>
 
-  /* ------------------------------------------------------------- estilos */
-  const css = `
-  #auth-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
-    padding:24px;background:#0E0E0E;font-family:'Inter Tight',system-ui,sans-serif;color:#F2F2F0;
-    -webkit-font-smoothing:antialiased;overflow:auto}
-  #auth-overlay::before{content:"";position:absolute;inset:0;
-    background:radial-gradient(900px 500px at 18% 42%,rgba(245,147,0,.16),transparent 62%);pointer-events:none}
+    <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:26px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+          <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+            <div style="background:var(--surface);padding:20px 22px">
+              <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)">
+                <span style="{{ k.iconStyle }}"></span>{{ k.label }}
+              </div>
+              <div style="font-size:24px;font-weight:600;margin:8px 0 5px;letter-spacing:-.7px">{{ k.value }}</div>
+              <div style="{{ k.deltaStyle }}">{{ k.delta }}</div>
+            </div>
+          </sc-for>
+        </div>
 
-  #auth-card{position:relative;width:min(940px,100%);display:grid;grid-template-columns:1fr 1fr;
-    background:#1A1A1A;border:1px solid #2C2C2C;border-radius:18px;overflow:hidden;
-    box-shadow:0 30px 80px rgba(0,0,0,.55)}
+        <div style="display:grid;grid-template-columns:.9fr 1.4fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;align-items:stretch">
+          <section style="background:var(--surface);padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px">
+            <div style="font-size:13px;font-weight:600;align-self:flex-start">Meta do mês</div>
+            <div style="position:relative;width:132px;height:132px">
+              <svg viewBox="0 0 132 132" style="transform:rotate(-90deg)">
+                <circle cx="66" cy="66" r="56" fill="none" stroke="var(--line)" stroke-width="12" />
+                <circle cx="66" cy="66" r="56" fill="none" stroke="url(#goalGrad)" stroke-width="12" stroke-linecap="round" style="{{ goalArcStyle }}" />
+                <defs><linearGradient id="goalGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="var(--accent)" /><stop offset="100%" stop-color="var(--accent2)" />
+                </linearGradient></defs>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                <div style="font-size:20px;font-weight:600;letter-spacing:-.5px">{{ goalPct }}</div>
+                <div style="font-size:10px;color:var(--muted2)">da meta</div>
+              </div>
+            </div>
+            <div style="font-size:11.5px;color:var(--text3);text-align:center">{{ goalLabel2 }}</div>
+          </section>
 
-  #auth-brand{position:relative;padding:44px 42px;display:flex;flex-direction:column;gap:28px;
-    background:linear-gradient(150deg,#241800 0%,#191308 46%,#161616 100%);border-right:1px solid #2C2C2C}
-  #auth-brand .logo{display:flex;align-items:center;gap:13px}
-  #auth-brand .mark{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(140deg,#F59300,#FF6A00);box-shadow:0 0 30px rgba(255,140,0,.35)}
-  #auth-brand .mark svg{width:24px;height:24px;stroke:#1A1206;fill:none;stroke-width:2;
-    stroke-linecap:round;stroke-linejoin:round}
-  #auth-brand .name{font-size:20px;font-weight:600;letter-spacing:-.4px;line-height:1.1}
-  #auth-brand .sub{font-size:10px;letter-spacing:1.6px;color:#8A8A86;margin-top:2px}
-  #auth-brand h1{margin:0;font-size:29px;font-weight:700;letter-spacing:-.9px;line-height:1.22}
-  #auth-brand h1 em{font-style:normal;
-    background:linear-gradient(120deg,#FFB300,#FF7A18);-webkit-background-clip:text;background-clip:text;color:transparent}
-  #auth-brand p{margin:0;font-size:13px;line-height:1.6;color:#9C9C98;max-width:330px}
-  #auth-brand ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
-  #auth-brand li{display:flex;align-items:center;gap:11px;font-size:12.5px;color:#C6C6C2}
-  #auth-brand li svg{width:15px;height:15px;flex:0 0 auto;stroke:#FFB300;fill:none;stroke-width:2;
-    stroke-linecap:round;stroke-linejoin:round}
-  #auth-brand .foot{margin-top:auto;font-size:11px;color:#5A5A57}
+          <section style="background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <div style="font-size:13px;font-weight:600">Valor por etapa do funil</div>
+              <div style="font-size:11px;color:var(--muted2)">em milhares (R$ K)</div>
+            </div>
+            <svg viewBox="0 0 360 150" style="width:100%;height:150px;overflow:visible">
+              <sc-for list="{{ gridLines }}" as="g" hint-placeholder-count="4">
+                <line x1="0" y1="{{ g.y }}" x2="360" y2="{{ g.y }}" stroke="var(--line)" stroke-width="1" />
+              </sc-for>
+              <polyline points="{{ trendPoints }}" fill="none" stroke="url(#trendGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+              <polygon points="{{ trendArea }}" fill="url(#trendFill)" opacity="0.5" />
+              <defs>
+                <linearGradient id="trendGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="var(--accent)" /><stop offset="100%" stop-color="var(--accent2)" />
+                </linearGradient>
+                <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.35" /><stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <sc-for list="{{ trendDots }}" as="d" hint-placeholder-count="6">
+                <circle cx="{{ d.x }}" cy="{{ d.y }}" r="3.5" fill="var(--surface)" stroke="var(--accent)" stroke-width="2" />
+              </sc-for>
+            </svg>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">
+              <sc-for list="{{ bars }}" as="b" hint-placeholder-count="6">
+                <div style="text-align:center">
+                  <div style="font-size:10.5px;font-weight:500;color:var(--text2)">{{ b.val }}</div>
+                  <div style="font-size:10px;color:var(--muted2);margin-top:2px">{{ b.m }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
 
-  #auth-form{padding:50px 46px;display:flex;flex-direction:column;justify-content:center;gap:0}
-  #auth-form h2{margin:0;font-size:25px;font-weight:600;letter-spacing:-.7px}
-  #auth-form .hint{font-size:12.5px;color:#8A8A86;margin:6px 0 24px}
-  #auth-form label{display:block;font-size:10px;font-weight:500;letter-spacing:1.1px;
-    color:#8A8A86;margin:0 0 7px}
-  .auth-field{margin-bottom:16px;position:relative}
-  #auth-form input{width:100%;border:1px solid #2C2C2C;background:#131313;border-radius:9px;
-    padding:12px 14px;font-size:13.5px;font-family:inherit;color:#F2F2F0;outline:none;transition:.15s}
-  #auth-form input:focus{border-color:#F59300;box-shadow:0 0 0 3px rgba(245,147,0,.14)}
-  #auth-form input::placeholder{color:#5A5A57}
-  #auth-eye{position:absolute;right:6px;bottom:5px;width:32px;height:32px;border:0;background:none;
-    cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
-  #auth-eye svg{width:16px;height:16px;stroke:#757571;fill:none;stroke-width:2;
-    stroke-linecap:round;stroke-linejoin:round}
-  #auth-eye:hover svg{stroke:#C6C6C2}
+          <section style="background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:16px;align-items:center">
+            <div style="font-size:13px;font-weight:600;align-self:flex-start">Origem dos leads</div>
+            <svg viewBox="0 0 120 120" style="width:120px;height:120px">
+              <sc-for list="{{ donutSegs }}" as="d" hint-placeholder-count="5">
+                <circle cx="60" cy="60" r="46" fill="none" stroke="{{ d.color }}" stroke-width="16"
+                  stroke-dasharray="{{ d.dash }}" stroke-dashoffset="{{ d.offset }}" transform="rotate(-90 60 60)" />
+              </sc-for>
+              <circle cx="60" cy="60" r="30" fill="var(--surface)" />
+            </svg>
+            <div style="display:flex;flex-direction:column;gap:9px;width:100%">
+              <sc-for list="{{ sources }}" as="s" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:8px;font-size:11.5px">
+                  <span style="{{ s.dotStyle }}"></span>
+                  <span style="flex:1;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span>
+                  <span style="color:var(--muted2);font-weight:500">{{ s.pct }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </div>
 
-  #auth-go{width:100%;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:9px;
-    background:linear-gradient(140deg,#F59300,#FF6A00);border:0;color:#1A1206;font-weight:600;
-    font-size:13.5px;padding:13px;border-radius:9px;font-family:inherit;cursor:pointer;transition:.15s}
-  #auth-go:hover{filter:brightness(1.08)}
-  #auth-go:disabled{opacity:.55;cursor:default;filter:none}
-  #auth-go svg{width:16px;height:16px;stroke:#1A1206;fill:none;stroke-width:2;
-    stroke-linecap:round;stroke-linejoin:round}
+        <section>
+          <div style="font-size:13px;font-weight:600;margin-bottom:14px">Agenda técnica</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+            <sc-for list="{{ agenda }}" as="a" hint-placeholder-count="3">
+              <div style="background:var(--surface);padding:18px 20px">
+                <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted2)">
+                  <span style="{{ a.iconStyle }}"></span>{{ a.when }}
+                </div>
+                <div style="font-size:13px;font-weight:500;margin:6px 0 4px">{{ a.title }}</div>
+                <div style="font-size:11.5px;color:var(--muted)">{{ a.who }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </sc-if>
 
-  #auth-msg{font-size:12.5px;line-height:1.45;min-height:18px;margin:14px 0 0;text-align:center}
-  #auth-msg.err{color:#FF8A7A}
-  #auth-msg.ok{color:#57D68C}
+    <sc-if value="{{ isFunnel }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:22px">
+        <div style="display:grid;grid-template-columns:repeat(6,minmax(160px,1fr));gap:14px;align-items:start;overflow-x:auto;padding-bottom:6px">
+          <sc-for list="{{ stages }}" as="st" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;gap:10px;min-height:400px">
+              <div style="display:flex;flex-direction:column;gap:6px;padding-bottom:9px;border-bottom:1px solid var(--line)">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div style="font-size:12.5px;font-weight:600;color:var(--text2)">{{ st.name }}</div>
+                  <div style="font-size:11px;color:var(--muted2)">{{ st.count }}</div>
+                </div>
+                <div style="font-size:11px;color:var(--muted2)">{{ st.total }}</div>
+                <div style="{{ st.lineStyle }}"></div>
+              </div>
+              <sc-for list="{{ st.cards }}" as="c" hint-placeholder-count="3">
+                <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px" style-hover="border-color:var(--line2)">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+                    <div style="font-size:12.5px;font-weight:500;line-height:1.35">{{ c.name }}</div>
+                    <button onClick="{{ c.editLead }}" title="Editar lead" style="flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border:1px solid var(--line);background:var(--surface);border-radius:6px;cursor:pointer;color:var(--muted2)" style-hover="background:var(--soft);color:var(--text)">
+                      <span style="{{ c.editLeadIconStyle }}"></span>
+                    </button>
+                  </div>
+                  <div style="font-size:13px;font-weight:600;color:var(--text);margin-top:8px">{{ c.value }}</div>
+                  <div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted2);margin-top:8px">
+                    <span style="{{ c.ownerIconStyle }}"></span>{{ c.owner }}
+                  </div>
+                  <sc-if value="{{ c.reason }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:10.5px;color:var(--accFg);margin-top:6px">{{ c.reason }}</div>
+                  </sc-if>
+                  <select onChange="{{ c.setStage }}" style="width:100%;margin-top:10px;border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:6px 8px;font-size:11.5px;font-family:inherit;color:var(--text2);outline:none;cursor:pointer">
+                    <sc-for list="{{ c.stageOptions }}" as="o" hint-placeholder-count="6">
+                      <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+                    <sc-for list="{{ c.actions }}" as="a" hint-placeholder-count="2">
+                      <button onClick="{{ a.go }}" style="{{ a.style }}" style-hover="background:var(--soft)">
+                        <span style="{{ a.iconStyle }}"></span>{{ a.label }}
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ st.empty }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:11.5px;color:var(--faint);padding:14px 2px">Sem projetos nesta etapa</div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted2);border-top:1px solid var(--line);padding-top:14px">Ao mover para <b style="font-weight:600;color:var(--text2)">Fechado</b>, o projeto é consolidado na ficha do cliente e entra na apuração de comissão (5%). Em <b style="font-weight:600;color:var(--text2)">Perdido</b>, vai para a reciclagem de leads.</div>
+      </div>
+    </sc-if>
 
-  #auth-links{display:flex;justify-content:center;gap:18px;margin-top:14px}
-  #auth-links button{background:none;border:0;font-family:inherit;font-size:12px;color:#8A8A86;
-    cursor:pointer;padding:0}
-  #auth-links button:hover{color:#FFB300}
-  #auth-admin-note{text-align:center;font-size:11.5px;color:#5A5A57;margin-top:14px}
-
-  @media (max-width:820px){
-    #auth-card{grid-template-columns:1fr}
-    #auth-brand{display:none}
-    #auth-form{padding:38px 28px}
-  }`;
-
-  const font = document.createElement("link");
-  font.rel = "stylesheet";
-  font.href = "https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap";
-  document.head.appendChild(font);
-
-  const st = document.createElement("style");
-  st.textContent = css;
-  document.head.appendChild(st);
-
-  const SVG = {
-    sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
-    funnel: '<path d="M3 4h18l-7 8.2V19l-4 2v-8.8z"/>',
-    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/>',
-    percent: '<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
-    shield: '<path d="M12 3l8 3v6c0 4.4-3.2 7.9-8 9-4.8-1.1-8-4.6-8-9V6z"/>',
-    login: '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>',
-    eye: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
-    eyeOff: '<path d="M9.9 5.2A9.9 9.9 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.3 6.4A17 17 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 4-.8"/><line x1="3" y1="3" x2="21" y2="21"/>',
-  };
-  const svg = (p) => '<svg viewBox="0 0 24 24">' + p + "</svg>";
-
-  /* --------------------------------------------------------------- markup */
-  function overlay() {
-    const el = document.createElement("div");
-    el.id = "auth-overlay";
-    el.innerHTML = `
-      <div id="auth-card">
-        <div id="auth-brand">
-          <div class="logo">
-            <div class="mark">${svg(SVG.sun)}</div>
+    <sc-if value="{{ isClients }}" hint-placeholder-val="{{ false }}">
+      <section style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)">
+        <div style="display:grid;grid-template-columns:1.7fr 1fr .9fr .8fr .8fr .7fr 70px;gap:12px;font-size:11px;color:var(--muted2);padding:13px 20px;border-bottom:1px solid var(--line)">
+          <div>Cliente</div><div>Cidade / UF</div><div>Valor do projeto</div><div>Situação</div><div>Responsável</div><div>Classificação</div><div></div>
+        </div>
+        <sc-for list="{{ clients }}" as="c" hint-placeholder-count="7">
+          <div style="display:grid;grid-template-columns:1.7fr 1fr .9fr .8fr .8fr .7fr 70px;gap:12px;align-items:center;padding:15px 20px;border-bottom:1px solid var(--soft);font-size:12.5px" style-hover="background:var(--hover)">
             <div>
-              <div class="name">${BRAND}</div>
-              <div class="sub">ENERGIA SOLAR</div>
+              <div style="font-weight:500">{{ c.name }}</div>
+              <div style="font-size:11px;color:var(--muted2);margin-top:2px">{{ c.type }}</div>
+            </div>
+            <div style="color:var(--text3)">{{ c.city }}</div>
+            <div style="font-weight:500">{{ c.value }}</div>
+            <div><span style="{{ c.stageStyle }}">{{ c.stage }}</span></div>
+            <div style="color:var(--text3)">{{ c.owner }}</div>
+            <div><span style="{{ c.partnerStyle }}">{{ c.partnerLabel }}</span></div>
+            <div>
+              <button onClick="{{ c.edit }}" title="Editar cliente" style="display:flex;align-items:center;justify-content:center;gap:5px;font-family:inherit;font-size:11px;padding:6px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer" style-hover="background:var(--soft);color:var(--text)">
+                <span style="{{ c.editIconStyle }}"></span>Editar
+              </button>
             </div>
           </div>
-          <h1>Gerencie seus projetos<br><em>solares</em> com eficiência</h1>
-          <p>Clientes, leads, funil de projetos, reciclagem e comissões em um só lugar.</p>
-          <ul>
-            <li>${svg(SVG.users)}Gestão de clientes e leads</li>
-            <li>${svg(SVG.funnel)}Funil da proposta à homologação</li>
-            <li>${svg(SVG.percent)}Comissão de 5% por projeto fechado</li>
-            <li>${svg(SVG.shield)}Controle de acesso por perfil</li>
-          </ul>
-          <div class="foot">© ${new Date().getFullYear()} ${BRAND}</div>
+        </sc-for>
+        <sc-if value="{{ clientsEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:26px 20px;font-size:12.5px;color:var(--faint)">Nenhum projeto fechado ainda.</div>
+        </sc-if>
+        <div style="padding:14px 20px;font-size:11.5px;color:var(--muted2);display:flex;gap:26px">
+          <span>{{ clientCount }} clientes</span><span>Valor total dos projetos {{ clientTotal }}</span>
         </div>
+      </section>
+    </sc-if>
 
-        <div id="auth-form">
-          <h2 id="auth-title">Bem-vindo de volta</h2>
-          <div class="hint" id="auth-hint">Entre com suas credenciais para acessar o sistema</div>
-
-          <div class="auth-field">
-            <label for="auth-email">E-MAIL</label>
-            <input id="auth-email" type="email" autocomplete="email" placeholder="voce@m4solar.com.br" />
+    <sc-if value="{{ editOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px">
+        <div style="width:560px;max-height:88vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Editar cliente</div>
+            <button onClick="{{ closeEdit }}" style="border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:7px;width:28px;height:28px;cursor:pointer;font-family:inherit;font-size:15px;line-height:1">×</button>
           </div>
 
-          <div class="auth-field">
-            <label for="auth-pass">SENHA</label>
-            <input id="auth-pass" type="password" autocomplete="current-password" placeholder="••••••••" />
-            <button id="auth-eye" type="button" title="Mostrar senha">${svg(SVG.eye)}</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <sc-for list="{{ editFields }}" as="f" hint-placeholder-count="10">
+              <div style="{{ f.wrapStyle }}">
+                <label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px">{{ f.label }}</label>
+                <sc-if value="{{ f.isSelect }}" hint-placeholder-val="{{ false }}">
+                  <select onChange="{{ f.set }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none">
+                    <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="4">
+                      <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                </sc-if>
+                <sc-if value="{{ f.isText }}" hint-placeholder-val="{{ true }}">
+                  <input value="{{ f.value }}" onInput="{{ f.set }}" placeholder="{{ f.placeholder }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none" />
+                </sc-if>
+              </div>
+            </sc-for>
           </div>
 
-          <button id="auth-go">${svg(SVG.login)}<span>Entrar</span></button>
-          <div id="auth-msg"></div>
-          <div id="auth-links">
-            <button id="auth-reset">Esqueci a senha</button>
+          <div style="{{ editMsgStyle }}">{{ editMsg }}</div>
+
+          <div style="display:flex;gap:9px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:16px">
+            <button onClick="{{ closeEdit }}" style="font-family:inherit;font-size:12.5px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer">Cancelar</button>
+            <button onClick="{{ saveEditBtn }}" style="font-family:inherit;font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:8px;border:0;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#1A1206;cursor:pointer;box-shadow:var(--glow)">{{ editSaveLabel }}</button>
           </div>
-          <div id="auth-admin-note">Não tem acesso? Fale com o administrador do sistema.</div>
         </div>
-      </div>`;
-    document.body.appendChild(el);
-    return el;
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLost }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+          <sc-for list="{{ lostKpis }}" as="k" hint-placeholder-count="3">
+            <div style="background:var(--surface);padding:20px 22px">
+              <div style="font-size:11.5px;color:var(--muted)">{{ k.label }}</div>
+              <div style="font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.6px">{{ k.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <section style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)">
+          <div style="display:grid;grid-template-columns:1.6fr .9fr 1.2fr .8fr .9fr 1fr;gap:12px;font-size:11px;color:var(--muted2);padding:13px 20px;border-bottom:1px solid var(--line)">
+            <div>Projeto perdido</div><div>Valor</div><div>Motivo</div><div>Perdida em</div><div>Retomar</div><div></div>
+          </div>
+          <sc-for list="{{ lost }}" as="l" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:1.6fr .9fr 1.2fr .8fr .9fr 1fr;gap:12px;align-items:center;padding:15px 20px;border-bottom:1px solid var(--soft);font-size:12.5px" style-hover="background:var(--hover)">
+              <div><div style="font-weight:500">{{ l.name }}</div><div style="font-size:11px;color:var(--muted2);margin-top:2px">{{ l.owner }}</div></div>
+              <div style="font-weight:500">{{ l.value }}</div>
+              <div style="color:var(--text3)">{{ l.reason }}</div>
+              <div style="color:var(--muted2)">{{ l.date }}</div>
+              <div style="color:var(--text3)">{{ l.recall }}</div>
+              <div style="display:flex;gap:7px;justify-content:flex-end">
+                <button onClick="{{ l.recycle }}" style="display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:11.5px;font-weight:500;padding:7px 12px;border-radius:7px;border:1px solid var(--accLine);background:var(--accSoft);color:var(--accFg);cursor:pointer" style-hover="background:var(--accSoft2)">
+                  <span style="{{ l.recycleIconStyle }}"></span>Reciclar lead
+                </button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ lostEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:26px 20px;font-size:12.5px;color:var(--faint)">Nenhuma lead na reciclagem.</div>
+          </sc-if>
+        </section>
+        <section>
+          <div style="font-size:13px;font-weight:600;margin-bottom:14px">Principais motivos de perda</div>
+          <div style="display:flex;flex-direction:column;gap:12px;max-width:520px">
+            <sc-for list="{{ lostReasons }}" as="r" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="width:180px;font-size:12.5px;color:var(--text2)">{{ r.name }}</div>
+                <div style="flex:1;height:2px;background:var(--line)"><div style="{{ r.barStyle }}"></div></div>
+                <div style="width:40px;text-align:right;font-size:12px;color:var(--muted)">{{ r.pct }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isComm }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:26px">
+        <section style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);min-width:0">
+          <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 140px;gap:14px;font-size:11px;color:var(--muted2);padding:13px 20px;border-bottom:1px solid var(--line)">
+            <div>Projeto</div><div>Cliente</div><div>Responsável</div><div>Valor do projeto</div><div>Comissão</div><div>Status</div>
+          </div>
+          <sc-for list="{{ commRows }}" as="r" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 140px;gap:14px;align-items:center;padding:15px 20px;border-bottom:1px solid var(--soft);font-size:12.5px" style-hover="background:var(--hover)">
+              <div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.project }}</div>
+              <div style="color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.client }}</div>
+              <div style="color:var(--text3)">{{ r.consultant }}</div>
+              <div style="color:var(--text3);white-space:nowrap">{{ r.base }}</div>
+              <div style="font-weight:600;white-space:nowrap">{{ r.amount }}</div>
+              <div>
+                <select onChange="{{ r.setStatus }}" style="{{ r.selectStyle }}">
+                  <sc-for list="{{ r.statusOptions }}" as="o" hint-placeholder-count="3">
+                    <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                  </sc-for>
+                </select>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ commEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:26px 20px;font-size:12.5px;color:var(--faint)">Nenhuma comissão apurada ainda.</div>
+          </sc-if>
+          <div style="display:flex;gap:28px;padding:15px 20px;font-size:11.5px;color:var(--muted2);white-space:nowrap;flex-wrap:wrap">
+            <span>Valor dos projetos <b style="color:var(--text);font-weight:600">{{ commRevenue }}</b></span>
+            <span>Total comissões (Em análise + Aprovado) <b style="color:var(--text);font-weight:600">{{ commTotal }}</b></span>
+            <span style="color:var(--badFg)">Canceladas: {{ commCancelledCount }}</span>
+          </div>
+        </section>
+        <section style="display:flex;flex-direction:column;gap:14px">
+          <div style="font-size:13px;font-weight:600">Regra de comissionamento</div>
+          <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);padding:18px 20px;max-width:320px">
+            <div style="font-size:28px;font-weight:600;letter-spacing:-.7px;background:linear-gradient(140deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent">5%</div>
+            <div style="font-size:12.5px;font-weight:500;margin-top:7px">Comissão do projeto</div>
+            <div style="font-size:11.5px;color:var(--muted2);margin-top:3px;line-height:1.45">Aplicada sobre o valor total quando o cliente aprova e o projeto é confirmado como vendido (etapa Fechado)</div>
+          </div>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReports }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:28px">
+        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start">
+          <section>
+            <div style="font-size:13px;font-weight:600;margin-bottom:18px">Conversão por etapa</div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <sc-for list="{{ conv }}" as="c" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:14px">
+                  <div style="width:132px;font-size:12.5px;color:var(--text2)">{{ c.name }}</div>
+                  <div style="flex:1;height:2px;background:var(--line)"><div style="{{ c.barStyle }}"></div></div>
+                  <div style="width:44px;text-align:right;font-size:12.5px;font-weight:500">{{ c.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+          <section>
+            <div style="font-size:13px;font-weight:600;margin-bottom:18px">Desempenho por região</div>
+            <div style="display:flex;flex-direction:column;gap:0">
+              <sc-for list="{{ regions }}" as="r" hint-placeholder-count="5">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;border-bottom:1px solid var(--line);padding:11px 0">
+                  <span style="color:var(--text2)">{{ r.name }}</span>
+                  <b style="font-weight:600">{{ r.value }}</b>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ regionsEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:12.5px;color:var(--faint);padding:11px 0">Sem dados de região.</div>
+            </sc-if>
+          </section>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+          <sc-for list="{{ reportCards }}" as="r" hint-placeholder-count="3">
+            <div style="background:var(--surface);padding:20px 22px">
+              <div style="font-size:11.5px;color:var(--muted)">{{ r.label }}</div>
+              <div style="font-size:24px;font-weight:600;margin:8px 0 5px;letter-spacing:-.7px">{{ r.value }}</div>
+              <div style="font-size:11.5px;color:var(--muted)">{{ r.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px">
+        <div style="width:600px;max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Novo lead</div>
+              <div style="font-size:11.5px;color:var(--muted);margin-top:2px">Checklist do primeiro contato — M4 Engenharia</div>
+            </div>
+            <button onClick="{{ closeModal }}" style="border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:7px;width:28px;height:28px;cursor:pointer;font-family:inherit;font-size:15px;line-height:1">×</button>
+          </div>
+
+          <sc-for list="{{ formSections }}" as="sec" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="font-size:11.5px;font-weight:600;color:var(--accFg);text-transform:uppercase;letter-spacing:.4px">{{ sec.title }}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <sc-for list="{{ sec.fields }}" as="f" hint-placeholder-count="6">
+                  <div style="{{ f.wrapStyle }}">
+                    <label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px">{{ f.label }}</label>
+                    <sc-if value="{{ f.isSelect }}" hint-placeholder-val="{{ false }}">
+                      <select onChange="{{ f.set }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none">
+                        <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="4">
+                          <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                        </sc-for>
+                      </select>
+                    </sc-if>
+                    <sc-if value="{{ f.isText }}" hint-placeholder-val="{{ true }}">
+                      <input value="{{ f.value }}" onInput="{{ f.set }}" placeholder="{{ f.placeholder }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none" />
+                    </sc-if>
+                    <sc-if value="{{ f.isDate }}" hint-placeholder-val="{{ false }}">
+                      <input type="date" value="{{ f.value }}" onInput="{{ f.set }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none" />
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+
+          <div style="{{ modalMsgStyle }}">{{ modalMsg }}</div>
+
+          <div style="display:flex;gap:9px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:16px">
+            <button onClick="{{ closeModal }}" style="font-family:inherit;font-size:12.5px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer">Cancelar</button>
+            <button onClick="{{ saveProject }}" style="display:inline-flex;align-items:center;gap:7px;font-family:inherit;font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:8px;border:0;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#1A1206;cursor:pointer;box-shadow:var(--glow)">
+              <span style="{{ plusIconStyle }}"></span>{{ saveLabel }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ leadEditOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px">
+        <div style="width:560px;max-height:88vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Editar lead</div>
+            <button onClick="{{ closeLeadEdit }}" style="border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:7px;width:28px;height:28px;cursor:pointer;font-family:inherit;font-size:15px;line-height:1">×</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <sc-for list="{{ leadEditFields }}" as="f" hint-placeholder-count="10">
+              <div style="{{ f.wrapStyle }}">
+                <label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px">{{ f.label }}</label>
+                <sc-if value="{{ f.isSelect }}" hint-placeholder-val="{{ false }}">
+                  <select onChange="{{ f.set }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none">
+                    <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="4">
+                      <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                </sc-if>
+                <sc-if value="{{ f.isText }}" hint-placeholder-val="{{ true }}">
+                  <input value="{{ f.value }}" onInput="{{ f.set }}" placeholder="{{ f.placeholder }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none" />
+                </sc-if>
+                <sc-if value="{{ f.isDate }}" hint-placeholder-val="{{ false }}">
+                  <input type="date" value="{{ f.value }}" onInput="{{ f.set }}" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none" />
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="{{ leadEditMsgStyle }}">{{ leadEditMsg }}</div>
+
+          <div style="display:flex;gap:9px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:16px">
+            <button onClick="{{ closeLeadEdit }}" style="font-family:inherit;font-size:12.5px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer">Cancelar</button>
+            <button onClick="{{ saveLeadEditBtn }}" style="font-family:inherit;font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:8px;border:0;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#1A1206;cursor:pointer;box-shadow:var(--glow)">{{ leadEditSaveLabel }}</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
+const brl = n => "R$ " + n.toLocaleString("pt-BR");
+const compact = n => n >= 1e6 ? "R$ " + (n / 1e6).toFixed(2).replace(".", ",") + " M" : "R$ " + Math.round(n / 1e3) + " K";
+const chip = (bg, fg) => `font-size:10.5px;font-weight:500;padding:3px 9px;border-radius:99px;background:${bg};color:${fg}`;
+const STAGES = ["Lead", "Qualificado", "Proposta", "Negociação", "Fechado", "Perdido"];
+
+/* ------------------------------------------------------------ ícones SVG */
+const P = {
+  grid:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  funnel:'<path d="M3 4h18l-7 8.2V19l-4 2v-8.8z"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/>',
+  recycle:'<path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 3.5V9h5.5"/>',
+  percent:'<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+  chart:'<line x1="3" y1="21" x2="3" y2="11"/><line x1="9" y1="21" x2="9" y2="4"/><line x1="15" y1="21" x2="15" y2="14"/><line x1="21" y1="21" x2="21" y2="8"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  search:'<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  arrow:'<line x1="4" y1="12" x2="18" y2="12"/><polyline points="12.5 6.5 18 12 12.5 17.5"/>',
+  arrowLeft:'<line x1="20" y1="12" x2="6" y2="12"/><polyline points="11.5 6.5 6 12 11.5 17.5"/>',
+  x:'<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
+  user:'<path d="M20 21v-2a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v2"/><circle cx="12" cy="7" r="4"/>',
+  money:'<path d="M3 7h18v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 7l3-4h12l3 4"/><circle cx="12" cy="13.5" r="2.4"/>',
+  layers:'<polygon points="12 2 22 8 12 14 2 8"/><polyline points="2 14 12 20 22 14"/>',
+  check:'<circle cx="12" cy="12" r="9"/><polyline points="8 12.5 11 15.5 16 9.5"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>',
+  pin:'<path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/>',
+  bolt:'<polygon points="13 2 4 14 11 14 10 22 20 10 13 10"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+};
+const DONUT_COLORS = ["var(--accent)", "var(--accent2)", "#C97A2E", "var(--bar2)", "var(--faint)"];
+const uri = p => `url("data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`)}")`;
+const ico = (p, size = 15) => {
+  const u = uri(p);
+  return `display:inline-block;flex:0 0 auto;width:${size}px;height:${size}px;background:currentColor;-webkit-mask:${u} center/contain no-repeat;mask:${u} center/contain no-repeat`;
+};
+
+const EMPTY_FORM = {
+  // empresa / contato
+  title: "", clientName: "", contactName: "", contactRole: "", whatsapp: "", email: "", address: "",
+  kind: "Residencial", classification: "Cliente", doc: "", segment: "", city: "", uf: "SP",
+  // origem / oportunidade
+  source: "Indicação", opportunityType: "Cliente", firstContact: "",
+  // qualificação (energia solar)
+  value: "", avgBill: "", hasSolar: "", deadline: "Agora", needDetail: "",
+  // acompanhamento
+  channel: "WhatsApp", contactNote: "", nextAction: "", nextActionAt: "",
+};
+const EMPTY_EDIT = { name: "", kind: "Residencial", classification: "Cliente", doc: "", contactName: "", contactRole: "", whatsapp: "", email: "", address: "", segment: "", city: "", uf: "SP" };
+
+class Component extends DCLogic {
+  state = {
+    view: "dash", deals: [], commissions: [], dark: false, loading: true, err: "", query: "",
+    modalOpen: false, saving: false, modalMsg: "", modalErr: false,
+    form: { ...EMPTY_FORM },
+    editOpen: false, editSaving: false, editMsg: "", editErr: false, editId: null,
+    editForm: { ...EMPTY_EDIT },
+    leadEditOpen: false, leadEditSaving: false, leadEditMsg: "", leadEditErr: false, leadEditId: null,
+    leadEditForm: {},
+  };
+
+  componentDidMount() {
+    this.applyTheme();
+    if (window.onAuthReady) window.onAuthReady(() => this.load());
+    else this.setState({ loading: false, err: "auth.js não carregado." });
+  }
+  componentDidUpdate() { this.applyTheme(); }
+  applyTheme() { document.documentElement.dataset.theme = this.state.dark ? "dark" : "light"; }
+
+  async load() {
+    try {
+      const [deals, commissions] = await Promise.all([
+        window.CRM.listProjects(),
+        window.CRM.listCommissions().catch(() => []),
+      ]);
+      this.setState({ deals, commissions, loading: false, err: "" });
+    } catch (e) {
+      this.setState({ loading: false, err: e.message || "Falha ao carregar projetos." });
+    }
   }
 
-  /* ----------------------------------------------------------------- init */
-  async function init() {
-    const { createClient } = await import(CDN);
-    const sb = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true },
+  async move(id, stage) {
+    this.setState(s => ({ deals: s.deals.map(d => d.id === id ? { ...d, stage } : d) }));
+    try { await window.CRM.setStage(id, stage); } catch (e) { this.setState({ err: e.message }); }
+    this.load();
+  }
+
+  async recycle(id) {
+    this.setState(s => ({
+      deals: s.deals.map(d => d.id === id ? { ...d, stage: "Lead", reason: null, date: null, recall: null } : d),
+      view: "funnel",
+    }));
+    try { await window.CRM.setStage(id, "Lead"); } catch (e) { this.setState({ err: e.message }); }
+    this.load();
+  }
+
+  setField(k, v) { this.setState(s => ({ form: { ...s.form, [k]: v } })); }
+
+  async saveProject() {
+    const f = this.state.form;
+    if (!f.title.trim()) return this.setState({ modalMsg: "Informe o nome do projeto.", modalErr: true });
+    this.setState({ saving: true, modalMsg: "Salvando…", modalErr: false });
+    try {
+      await window.CRM.createProject(f);
+      this.setState({ saving: false, modalOpen: false, modalMsg: "", form: { ...EMPTY_FORM } });
+      this.load();
+    } catch (e) {
+      this.setState({ saving: false, modalMsg: e.message, modalErr: true });
+    }
+  }
+
+  openEdit(deal) {
+    this.setState({
+      editOpen: true, editMsg: "", editId: deal.clientId,
+      editForm: {
+        name: deal.client?.name || deal.name || "",
+        kind: deal.client?.kind || "Residencial",
+        classification: deal.isPartner ? "Parceria" : "Cliente",
+        doc: deal.client?.doc || "",
+        contactName: deal.client?.contact_name || "",
+        contactRole: deal.client?.contact_role || "",
+        whatsapp: deal.client?.whatsapp || deal.client?.phone || "",
+        email: deal.client?.email || "",
+        address: deal.client?.address || "",
+        segment: deal.client?.segment || "",
+        city: (deal.city || "").split(" / ")[0] || "",
+        uf: (deal.city || "").split(" / ")[1] || "SP",
+      },
     });
-    window.sb = sb;
-    window.signOut = async () => {
-      await sb.auth.signOut();
-      location.reload();
-    };
+  }
+  closeEdit() { this.setState({ editOpen: false }); }
+  editField(k, v) { this.setState(s => ({ editForm: { ...s.editForm, [k]: v } })); }
 
-    const box = overlay();
-    const $ = (id) => box.querySelector(id);
-    const msg = $("#auth-msg");
-    const say = (t, cls) => { msg.textContent = t; msg.className = cls || ""; };
-
-    $("#auth-eye").onclick = function toggleEye() {
-      const i = $("#auth-pass");
-      const show = i.type === "password";
-      i.type = show ? "text" : "password";
-      const b = $("#auth-eye");
-      b.innerHTML = svg(show ? SVG.eyeOff : SVG.eye);
-      b.title = show ? "Ocultar senha" : "Mostrar senha";
-      b.onclick = toggleEye;
-    };
-
-    $("#auth-reset").onclick = async () => {
-      const email = $("#auth-email").value.trim();
-      if (!email) return say("Informe o e-mail primeiro.", "err");
-      const { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: location.origin + location.pathname,
-      });
-      say(error ? error.message : "Enviamos um link de redefinição para seu e-mail.", error ? "err" : "ok");
-    };
-
-    $("#auth-go").onclick = submit;
-    box.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
-
-    async function submit() {
-      const email = $("#auth-email").value.trim();
-      const password = $("#auth-pass").value;
-      if (!email || !password) return say("Preencha e-mail e senha.", "err");
-      $("#auth-go").disabled = true;
-      say("Aguarde…");
-      try {
-        const { error } = await sb.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        await enter();
-      } catch (e) {
-        $("#auth-go").disabled = false;
-        say(traduz(e.message), "err");
-      }
+  async saveEdit() {
+    const f = this.state.editForm;
+    if (!f.name.trim()) return this.setState({ editMsg: "Informe o nome do cliente.", editErr: true });
+    this.setState({ editSaving: true, editMsg: "Salvando…", editErr: false });
+    try {
+      await window.CRM.updateClient(this.state.editId, f);
+      this.setState({ editSaving: false, editOpen: false, editMsg: "" });
+      this.load();
+    } catch (e) {
+      this.setState({ editSaving: false, editMsg: e.message, editErr: true });
     }
-
-    function traduz(m) {
-      if (/Invalid login credentials/i.test(m)) return "E-mail ou senha inválidos.";
-      if (/User already registered/i.test(m)) return "Este e-mail já tem conta. Faça login.";
-      if (/Password should be/i.test(m)) return "A senha precisa ter ao menos 6 caracteres.";
-      if (/Email not confirmed/i.test(m)) return "Confirme seu e-mail antes de entrar.";
-      return m;
-    }
-
-    async function enter() {
-      const { data: { user } } = await sb.auth.getUser();
-      window.currentUser = { id: user.id, email: user.email };
-
-      let { data: row } = await sb
-        .from("consultants")
-        .select("*")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
-
-      if (!row) {
-        const ins = await sb
-          .from("consultants")
-          .insert({
-            auth_user_id: user.id,
-            name: (user.email || "").split("@")[0],
-            email: user.email,
-          })
-          .select()
-          .single();
-        if (ins.error) {
-          say(
-            "Não foi possível preparar seu cadastro (" + ins.error.message +
-            "). Peça ao administrador para rodar auth_policies.sql no Supabase.",
-            "err"
-          );
-          $("#auth-go").disabled = false;
-          return;
-        }
-        row = ins.data;
-      }
-
-      window.me = row || { auth_user_id: user.id, email: user.email, role: "consultor" };
-      box.remove();
-      readyCbs.splice(0).forEach((cb) => cb(window.me));
-      document.dispatchEvent(new CustomEvent("auth:ready", { detail: window.me }));
-    }
-
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) await enter();
   }
 
-  if (document.readyState === "loading")
-    document.addEventListener("DOMContentLoaded", init);
-  else init();
-})();
+  async setCommissionStatus(id, status) {
+    this.setState(s => ({ commissions: s.commissions.map(c => c.id === id ? { ...c, status } : c) }));
+    try { await window.CRM.setCommissionStatus(id, status); } catch (e) { this.setState({ err: e.message }); }
+    this.load();
+  }
+
+  openLeadEdit(deal) {
+    const [city, uf] = (deal.city || "").split(" / ");
+    this.setState({
+      leadEditOpen: true, leadEditMsg: "", leadEditId: deal.id,
+      leadEditForm: {
+        title: deal.name || "", value: String(deal.value || ""), city: city || "", uf: uf || "SP",
+        source: deal.source || "Indicação", opportunityType: deal.opportunityType || "Cliente",
+        avgBill: deal.avgBill != null ? String(deal.avgBill) : "",
+        hasSolar: deal.hasSolar === true ? "Sim" : deal.hasSolar === false ? "Não" : "",
+        deadline: deal.deadline || "Agora", needDetail: deal.needDetail || "",
+        nextAction: deal.nextAction || "", nextActionAt: deal.nextActionAtRaw || "",
+      },
+    });
+  }
+  closeLeadEdit() { this.setState({ leadEditOpen: false }); }
+  leadEditField(k, v) { this.setState(s => ({ leadEditForm: { ...s.leadEditForm, [k]: v } })); }
+
+  async saveLeadEdit() {
+    const f = this.state.leadEditForm;
+    if (!f.title.trim()) return this.setState({ leadEditMsg: "Informe o nome do projeto.", leadEditErr: true });
+    this.setState({ leadEditSaving: true, leadEditMsg: "Salvando…", leadEditErr: false });
+    try {
+      await window.CRM.updateProject(this.state.leadEditId, f);
+      this.setState({ leadEditSaving: false, leadEditOpen: false, leadEditMsg: "" });
+      this.load();
+    } catch (e) {
+      this.setState({ leadEditSaving: false, leadEditMsg: e.message, leadEditErr: true });
+    }
+  }
+
+  renderVals() {
+    const v = this.state.view;
+    const q = this.state.query.trim().toLowerCase();
+    const deals = q
+      ? this.state.deals.filter(d => (d.name + " " + d.city + " " + d.owner).toLowerCase().includes(q))
+      : this.state.deals;
+
+    const at = s => deals.filter(d => d.stage === s);
+    const closed = at("Fechado"), lostList = at("Perdido");
+    const sum = arr => arr.reduce((t, d) => t + d.value, 0);
+    const closedTotal = sum(closed);
+    const active = deals.filter(d => !["Fechado", "Perdido"].includes(d.stage));
+
+    /* --------------------------------------------------- comissionamento */
+    const STATUS_OPTS = ["Em análise", "Aprovado", "Cancelado"];
+    const STATUS_STYLE = {
+      "Em análise": "color:var(--warnFg);background:var(--warnBg)",
+      "Aprovado": "color:var(--okFg);background:var(--okBg)",
+      "Cancelado": "color:var(--badFg);background:var(--badBg)",
+    };
+    const commData = this.state.commissions || [];
+    const commRows = commData.map(c => ({
+      project: c.project, client: c.client, consultant: abbr(c.consultant),
+      base: brl(c.base), amount: brl(Math.round(c.amount)),
+      selectStyle: `width:100%;border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:11.5px;font-family:inherit;outline:none;cursor:pointer;${STATUS_STYLE[c.status] || ""}`,
+      setStatus: (e) => this.setCommissionStatus(c.id, e.target.value),
+      statusOptions: STATUS_OPTS.map(s => ({ value: s, label: s, selected: s === c.status })),
+    }));
+    const commActive = commData.filter(c => c.status !== "Cancelado");
+
+    /* ----------------------------------------------------------- agregados */
+    const byKey = (arr, key) => arr.reduce((m, d) => { const k = d[key] || "—"; m[k] = (m[k] || 0) + d.value; return m; }, {});
+    const pctList = (obj) => {
+      const tot = Object.values(obj).reduce((a, b) => a + b, 0) || 1;
+      return Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, 5)
+        .map(([name, val]) => [name, Math.round(val / tot * 100)]);
+    };
+    const srcList = pctList(byKey(deals, "source"));
+    const regionList = Object.entries(byKey(closed, "city")).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const reasonCount = lostList.reduce((m, d) => { const k = d.reason || "Não informado"; m[k] = (m[k] || 0) + 1; return m; }, {});
+    const reasonList = Object.entries(reasonCount).sort((a, b) => b[1] - a[1])
+      .map(([name, n]) => [name, Math.round(n / (lostList.length || 1) * 100)]);
+
+    const meta = {
+      dash: ["Dashboard", "Visão geral dos seus projetos"],
+      funnel: ["Funil de projetos", "Use as ações do card para mover o projeto de etapa"],
+      clients: ["Clientes", "Projetos fechados consolidados na ficha do cliente"],
+      lost: ["Perdidos", "Projetos perdidos disponíveis para reciclagem"],
+      comm: ["Comissionamento", "5% do valor de cada projeto fechado"],
+      reports: ["Relatórios", "Indicadores comerciais e de execução de projetos"],
+    };
+
+    const nav = [["dash", "Dashboard", "", P.grid], ["funnel", "Funil", active.length, P.funnel],
+      ["clients", "Clientes", closed.length, P.users], ["lost", "Perdidos", lostList.length, P.recycle],
+      ["comm", "Comissionamento", "", P.percent], ["reports", "Relatórios", "", P.chart]]
+      .map(([id, label, badge, icon]) => ({
+        label, badge: badge === "" ? "" : String(badge),
+        go: () => this.setState({ view: id }),
+        iconStyle: ico(icon, 15),
+        badgeStyle: `font-size:10.5px;color:${v === id ? "var(--text3)" : "var(--faint)"}`,
+        style: `display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;font-family:inherit;font-size:13px;padding:8px 9px;border-radius:8px;border:0;cursor:pointer;${
+          v === id ? "background:var(--soft);color:var(--text);font-weight:600;box-shadow:inset 2px 0 0 var(--accent)" : "background:transparent;color:var(--text3);font-weight:400"}`,
+      }));
+
+    const nextOf = s => STAGES[Math.min(STAGES.length - 1, STAGES.indexOf(s) + 1)];
+    const prevOf = s => STAGES[Math.max(0, STAGES.indexOf(s) - 1)];
+    const stages = STAGES.map((name, i) => {
+      const cards = at(name);
+      return {
+        name, count: cards.length, total: compact(sum(cards)), empty: cards.length === 0,
+        lineStyle: `height:2px;border-radius:99px;background:${name === "Perdido" ? "var(--line2)" : "linear-gradient(90deg,var(--accent),var(--accent2))"};opacity:${name === "Perdido" ? 1 : 1 - i * 0.13};box-shadow:${name === "Perdido" ? "none" : "var(--glow)"}`,
+        cards: cards.map(c => {
+          const actionList = name === "Perdido"
+            ? [["Reciclar", () => this.recycle(c.id)]]
+            : [
+                ...(i > 0 ? [["Voltar", () => this.move(c.id, prevOf(name))]] : []),
+                ...(name !== "Fechado" ? [["Avançar", () => this.move(c.id, nextOf(name))]] : [["Ver cliente", () => this.setState({ view: "clients" })]]),
+                ...(name !== "Fechado" ? [["Perdi", () => this.move(c.id, "Perdido")]] : []),
+              ];
+          return {
+            name: c.name, value: brl(c.value), owner: c.owner, reason: c.reason,
+            ownerIconStyle: ico(P.user, 11),
+            editLead: () => this.openLeadEdit(c),
+            editLeadIconStyle: ico(P.file, 11),
+            setStage: (e) => this.move(c.id, e.target.value),
+            stageOptions: STAGES.map(s => ({ value: s, label: s, selected: s === name })),
+            actions: actionList.map(([label, go]) => ({ label, go,
+              iconStyle: ico({ "Avançar": P.arrow, "Voltar": P.arrowLeft, "Perdi": P.x, "Reciclar": P.recycle, "Ver cliente": P.user }[label] || P.arrow, 12),
+              style: `display:inline-flex;align-items:center;gap:5px;font-family:inherit;font-size:11px;font-weight:500;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer` })),
+          };
+        }),
+      };
+    });
+
+    const banner = this.state.err ? this.state.err : (this.state.loading ? "Carregando projetos…" : "");
+
+    return {
+      nav, stages,
+      title: meta[v][0], subtitle: meta[v][1],
+      isDash: v === "dash", isFunnel: v === "funnel", isClients: v === "clients",
+      isLost: v === "lost", isComm: v === "comm", isReports: v === "reports",
+
+      banner,
+      bannerStyle: `font-size:12.5px;padding:11px 15px;border-radius:9px;border:1px solid ${this.state.err ? "var(--badFg)" : "var(--line)"};background:${this.state.err ? "var(--badBg)" : "var(--soft)"};color:${this.state.err ? "var(--badFg)" : "var(--muted)"}`,
+
+      query: this.state.query,
+      setQuery: (e) => this.setState({ query: e.target.value }),
+
+      /* ------------------------------------------------------------ modal */
+      modalOpen: this.state.modalOpen,
+      openModal: () => this.setState({ modalOpen: true, modalMsg: "" }),
+      closeModal: () => this.setState({ modalOpen: false, modalMsg: "" }),
+      saveProject: () => this.saveProject(),
+      saveLabel: this.state.saving ? "Salvando…" : "Criar projeto",
+      modalMsg: this.state.modalMsg,
+      modalMsgStyle: `font-size:12px;min-height:16px;color:${this.state.modalErr ? "var(--badFg)" : "var(--muted)"}`,
+      formSections: [
+        {
+          title: "Cadastro inicial",
+          fields: [
+            ["title", "Nome do projeto *", "Ex.: Usina 30 kWp — Loja São João", "full"],
+            ["clientName", "Empresa / cliente", "Loja São João"],
+            ["contactName", "Nome do responsável", "Carlos"],
+            ["contactRole", "Cargo", "Proprietário"],
+            ["whatsapp", "WhatsApp", "(11) 99999-9999"],
+            ["email", "E-mail", "contato@empresa.com.br"],
+            ["segment", "Segmento", "Material de construção"],
+            ["kind", "Tipo de cliente", null, null, ["Residencial", "Empresa", "Rural", "Condomínio", "Poder público"]],
+            ["classification", "Classificação", null, null, ["Cliente", "Parceria"]],
+            ["doc", "CPF / CNPJ", "Somente números"],
+            ["address", "Endereço", "Rua, número, bairro", "full"],
+            ["city", "Cidade / região", "Burgo Paulista"],
+            ["uf", "UF", "SP"],
+          ],
+        },
+        {
+          title: "Origem e oportunidade",
+          fields: [
+            ["source", "Origem do lead", null, null, ["Indicação", "Google Ads", "Feira / eventos", "Instagram", "Porta a porta", "Visita presencial"]],
+            ["opportunityType", "Tipo de oportunidade", null, null, ["Cliente", "Parceiro", "Ambos"]],
+            ["firstContact", "Data do primeiro contato", "", null, null, "date"],
+          ],
+        },
+        {
+          title: "Qualificação (se energia solar)",
+          fields: [
+            ["value", "Valor do projeto (R$)", "62000"],
+            ["avgBill", "Valor médio da conta (R$/mês)", "3500"],
+            ["hasSolar", "Já possui solar?", null, null, ["", "Sim", "Não"]],
+            ["deadline", "Prazo", null, null, ["Agora", "3–6 meses", "Sem previsão"]],
+            ["needDetail", "Necessidade / interesse", "Elétrica, parceria, solar…", "full"],
+          ],
+        },
+        {
+          title: "Acompanhamento — regra de ouro: sempre com próxima ação e data",
+          fields: [
+            ["channel", "Canal do contato", null, null, ["WhatsApp", "Ligação", "E-mail", "Visita presencial"]],
+            ["contactNote", "O que aconteceu", "Enviei portfólio e expliquei os serviços.", "full"],
+            ["nextAction", "Próxima ação", "Fazer follow-up"],
+            ["nextActionAt", "Data da próxima ação", "", null, null, "date"],
+          ],
+        },
+      ].map(sec => ({
+        title: sec.title,
+        fields: sec.fields.map(([key, label, placeholder, span, options, type]) => ({
+          label, placeholder: placeholder || "", value: this.state.form[key],
+          isSelect: !!options, isDate: type === "date", isText: !options && type !== "date",
+          wrapStyle: span === "full" ? "grid-column:1 / -1" : "",
+          options: (options || []).map(o => ({ value: o, label: o || "—", selected: this.state.form[key] === o })),
+          set: (e) => this.setField(key, e.target.value),
+        })),
+      })),
+
+      goalStyle: `width:${Math.min(100, Math.round(closedTotal / 18000))}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:var(--glow)`,
+      goalLabel: compact(closedTotal) + " de R$ 1,80 M",
+      goalLabel2: compact(closedTotal) + " de R$ 1,80 M",
+      goalPct: Math.min(100, Math.round(closedTotal / 1800000 * 100)) + "%",
+      goalArcStyle: (() => {
+        const C = 2 * Math.PI * 56;
+        const frac = Math.min(1, closedTotal / 1800000);
+        return `stroke-dasharray:${C};stroke-dashoffset:${C * (1 - frac)};transition:stroke-dashoffset .3s`;
+      })(),
+
+      clients: closed.map(c => ({
+        name: c.name, type: c.type, city: c.city, value: brl(c.value),
+        stage: "Ativo", stageStyle: chip("var(--okBg)", "var(--okFg)"), owner: c.owner,
+        partnerLabel: c.isPartner ? "Parceria" : "Cliente",
+        partnerStyle: c.isPartner ? chip("var(--accSoft)", "var(--accFg)") : chip("var(--soft)", "var(--text3)"),
+        editIconStyle: ico(P.file, 12),
+        edit: () => this.openEdit(c) })),
+      clientsEmpty: closed.length === 0,
+      clientCount: closed.length, clientTotal: compact(closedTotal),
+
+      /* --------------------------------------------------- editar cliente */
+      editOpen: this.state.editOpen,
+      closeEdit: () => this.closeEdit(),
+      saveEditBtn: () => this.saveEdit(),
+      editSaveLabel: this.state.editSaving ? "Salvando…" : "Salvar alterações",
+      editMsg: this.state.editMsg,
+      editMsgStyle: `font-size:12px;min-height:16px;color:${this.state.editErr ? "var(--badFg)" : "var(--muted)"}`,
+      editFields: [
+        ["name", "Nome do cliente *", "", "full"],
+        ["classification", "Classificação", null, null, ["Cliente", "Parceria"]],
+        ["kind", "Tipo de cliente", null, null, ["Residencial", "Empresa", "Rural", "Condomínio", "Poder público"]],
+        ["doc", "CPF / CNPJ"],
+        ["contactName", "Nome do responsável"],
+        ["contactRole", "Cargo"],
+        ["whatsapp", "WhatsApp / Telefone"],
+        ["email", "E-mail"],
+        ["segment", "Segmento"],
+        ["address", "Endereço", "", "full"],
+        ["city", "Cidade"],
+        ["uf", "UF"],
+      ].map(([key, label, placeholder, span, options]) => ({
+        label, placeholder: placeholder || "", value: this.state.editForm[key],
+        isSelect: !!options, isText: !options,
+        wrapStyle: span === "full" ? "grid-column:1 / -1" : "",
+        options: (options || []).map(o => ({ value: o, label: o, selected: this.state.editForm[key] === o })),
+        set: (e) => this.editField(key, e.target.value),
+      })),
+
+      /* ------------------------------------------------------- editar lead */
+      leadEditOpen: this.state.leadEditOpen,
+      closeLeadEdit: () => this.closeLeadEdit(),
+      saveLeadEditBtn: () => this.saveLeadEdit(),
+      leadEditSaveLabel: this.state.leadEditSaving ? "Salvando…" : "Salvar alterações",
+      leadEditMsg: this.state.leadEditMsg,
+      leadEditMsgStyle: `font-size:12px;min-height:16px;color:${this.state.leadEditErr ? "var(--badFg)" : "var(--muted)"}`,
+      leadEditFields: [
+        ["title", "Nome do projeto *", "", "full"],
+        ["value", "Valor do projeto (R$)", "62000"],
+        ["source", "Origem", null, null, ["Indicação", "Google Ads", "Feira / eventos", "Instagram", "Porta a porta", "Visita presencial"]],
+        ["opportunityType", "Tipo de oportunidade", null, null, ["Cliente", "Parceiro", "Ambos"]],
+        ["city", "Cidade / região"],
+        ["uf", "UF"],
+        ["avgBill", "Valor médio da conta (R$/mês)", "3500"],
+        ["hasSolar", "Já possui solar?", null, null, ["", "Sim", "Não"]],
+        ["deadline", "Prazo", null, null, ["Agora", "3–6 meses", "Sem previsão"]],
+        ["needDetail", "Necessidade / interesse", "", "full"],
+        ["nextAction", "Próxima ação"],
+        ["nextActionAt", "Data da próxima ação", "", null, null, "date"],
+      ].map(([key, label, placeholder, span, options, type]) => ({
+        label, placeholder: placeholder || "", value: (this.state.leadEditForm || {})[key] ?? "",
+        isSelect: !!options, isDate: type === "date", isText: !options && type !== "date",
+        wrapStyle: span === "full" ? "grid-column:1 / -1" : "",
+        options: (options || []).map(o => ({ value: o, label: o || "—", selected: (this.state.leadEditForm || {})[key] === o })),
+        set: (e) => this.leadEditField(key, e.target.value),
+      })),
+
+      lost: lostList.map(l => ({
+        name: l.name, owner: l.owner, value: brl(l.value), reason: l.reason || "Não informado",
+        date: l.date || "—", recall: l.recall || "A definir",
+        recycleIconStyle: ico(P.recycle, 12),
+        recycle: () => this.recycle(l.id) })),
+      lostEmpty: lostList.length === 0,
+      lostKpis: [
+        { label: "Projetos em reciclagem", value: String(lostList.length) },
+        { label: "Valor recuperável", value: compact(sum(lostList)) },
+        { label: "Ticket médio perdido", value: lostList.length ? compact(Math.round(sum(lostList) / lostList.length)) : "R$ 0 K" },
+      ],
+      lostReasons: reasonList.map(([name, p]) => ({ name, pct: p + "%",
+        barStyle: `width:${p}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))` })),
+
+      kpis: [
+        ["Projetos fechados", compact(closedTotal), closed.length + " no total", 1, P.money],
+        ["Pipeline ativo", compact(sum(active)), active.length + " projetos em andamento", 0, P.layers],
+        ["Projetos perdidos", String(lostList.length), compact(sum(lostList)) + " recuperáveis", -1, P.check],
+        ["Taxa de fechamento", deals.length ? Math.round(closed.length / deals.length * 100) + "%" : "0%", "Fechados sobre o total", 0, P.target],
+      ].map(([label, value, delta, dir, icon]) => ({ label, value, delta, iconStyle: ico(icon, 13),
+        deltaStyle: `font-size:11.5px;color:${dir === 1 ? "var(--okFg)" : dir === -1 ? "var(--badFg)" : "var(--muted2)"}` })),
+
+      bars: STAGES.map(s => ({ m: s.slice(0, 5), val: compact(sum(at(s))) })),
+
+      gridLines: [0, 1, 2, 3].map(i => ({ y: 10 + i * 43 })),
+
+      ...(() => {
+        const vals = STAGES.map(s => sum(at(s)));
+        const max = Math.max(...vals, 1);
+        const n = vals.length;
+        const stepX = 360 / (n - 1);
+        const pts = vals.map((v, i) => [Math.round(i * stepX), Math.round(140 - (v / max) * 130)]);
+        const trendPoints = pts.map(([x, y]) => `${x},${y}`).join(" ");
+        const trendArea = `0,140 ${trendPoints} 360,140`;
+        const trendDots = pts.map(([x, y]) => ({ x, y }));
+        return { trendPoints, trendArea, trendDots };
+      })(),
+
+      ...(() => {
+        const list = srcList.length ? srcList : [["Sem dados", 100]];
+        const C = 2 * Math.PI * 46;
+        let acc = 0;
+        const segs = list.map(([name, p], i) => {
+          const frac = p / 100;
+          const dash = `${C * frac} ${C}`;
+          const offset = -acc * C;
+          acc += frac;
+          const color = srcList.length ? DONUT_COLORS[i % DONUT_COLORS.length] : "var(--line)";
+          return {
+            name, pct: p + "%", color, dash, offset,
+            dotStyle: `display:inline-block;width:8px;height:8px;border-radius:99px;background:${color}`,
+          };
+        });
+        return { sources: segs, donutSegs: segs };
+      })(),
+
+      agenda: [
+        { when: "Próximas visitas", iconStyle: ico(P.pin, 12), title: active.length + " projetos ativos", who: "Acompanhe pelo funil" },
+        { when: "Homologações", iconStyle: ico(P.file, 12), title: closed.length + " projetos fechados", who: "Consolidados na ficha do cliente" },
+        { when: "Reciclagem", iconStyle: ico(P.bolt, 12), title: lostList.length + " leads a retomar", who: compact(sum(lostList)) + " em valor recuperável" },
+      ],
+
+      dark: this.state.dark,
+      themeLabel: this.state.dark ? "Mudar para tema claro" : "Mudar para tema escuro",
+      toggleTheme: () => this.setState(s => ({ dark: !s.dark })),
+      themeIconStyle: ico(this.state.dark ? P.sun : P.moon, 16),
+      searchIconStyle: ico(P.search, 14) + ";position:absolute;left:11px;color:var(--muted2);pointer-events:none",
+      plusIconStyle: ico(P.plus, 13),
+      logoutIconStyle: ico(P.logout, 13),
+
+      userName: window.me?.name || (window.currentUser?.email || "").split("@")[0] || "Consultor",
+      userRole: window.me?.role === "gerente" ? "Gerente" : window.me?.role === "admin" ? "Admin" : "Consultor",
+      userInitial: (window.me?.name || window.currentUser?.email || "?").trim().charAt(0).toUpperCase(),
+      avatarStyle: "flex:0 0 auto;width:32px;height:32px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#1A1206;background:linear-gradient(140deg,var(--accent),var(--accent2))",
+      signOut: () => window.signOut && window.signOut(),
+
+      commEmpty: commRows.length === 0,
+      commRevenue: compact(commData.reduce((t, c) => t + c.base, 0)),
+      commTotal: brl(Math.round(commActive.reduce((t, c) => t + c.amount, 0))),
+      commCancelledCount: commData.filter(c => c.status === "Cancelado").length,
+      commRows,
+
+      conv: (() => {
+        const n = s => at(s).length;
+        const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+        const tot = deals.length;
+        return [
+          ["Lead → Qualif.", pct(n("Qualificado"), n("Lead") + n("Qualificado"))],
+          ["Qualif. → Proposta", pct(n("Proposta"), n("Qualificado") + n("Proposta"))],
+          ["Proposta → Negoc.", pct(n("Negociação"), n("Proposta") + n("Negociação"))],
+          ["Negoc. → Fechado", pct(n("Fechado"), n("Negociação") + n("Fechado"))],
+          ["Total → Fechado", pct(n("Fechado"), tot)],
+        ].map(([name, p]) => ({ name, value: p + "%",
+          barStyle: `width:${p}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:var(--glow)` }));
+      })(),
+
+      regions: regionList.map(([name, val]) => ({ name, value: compact(val) })),
+      regionsEmpty: regionList.length === 0,
+
+      reportCards: [
+        { label: "Ticket médio", value: closed.length ? compact(Math.round(closedTotal / closed.length)) : "R$ 0 K", note: "Média dos projetos fechados" },
+        { label: "Valor em negociação", value: compact(sum(active)), note: active.length + " projetos no funil" },
+        { label: "Comissão apurada", value: brl(Math.round(closedTotal * 0.05)), note: "5% sobre os fechados" },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>
