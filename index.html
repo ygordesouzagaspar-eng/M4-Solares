@@ -58,6 +58,15 @@ const P = {
   pin:'<path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
   file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/>',
   bolt:'<polygon points="13 2 4 14 11 14 10 22 20 10 13 10"/>',
+  pencil:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/>',
+  phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
+  tag:'<path d="M20.6 13.4 12 22l-9-9V4a1 1 0 0 1 1-1h9z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  alert:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12" y2="17"/>',
+  trend:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  building:'<rect x="4" y="2" width="16" height="20" rx="1.5"/><line x1="9" y1="7" x2="9" y2="7"/><line x1="15" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="9" y2="11"/><line x1="15" y1="11" x2="15" y2="11"/><path d="M10 22v-4h4v4"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>',
+  save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
   logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
 };
 const DONUT_COLORS = ["var(--accent)", "var(--accent2)", "#C97A2E", "var(--bar2)", "var(--faint)"];
@@ -264,7 +273,7 @@ function newLeadModal() {
     <div style="width:600px;max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:20px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div>
-          <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Novo lead</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:16px;font-weight:600;letter-spacing:-.3px"><span style="${ico(P.plus, 15)};color:var(--accent)"></span>Novo lead</div>
           <div style="font-size:11.5px;color:var(--muted);margin-top:2px">Checklist do primeiro contato — M4 Engenharia</div>
         </div>
         <button data-action="closeModal" style="border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:15px;line-height:1">×</button>
@@ -302,7 +311,7 @@ function editClientModal() {
   <div class="modal-overlay" style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px">
     <div style="width:560px;max-height:88vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:18px">
       <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Editar cliente</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:16px;font-weight:600;letter-spacing:-.3px"><span style="${ico(P.pencil, 15)};color:var(--accent)"></span>Editar cliente</div>
         <button data-action="closeEdit" style="border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:15px;line-height:1">×</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
@@ -313,7 +322,7 @@ function editClientModal() {
       <div style="font-size:12px;min-height:16px;color:${state.editErr ? "var(--badFg)" : "var(--muted)"}">${esc(state.editMsg)}</div>
       <div style="display:flex;gap:9px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:16px">
         <button data-action="closeEdit" style="font-size:12.5px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer">Cancelar</button>
-        <button data-action="saveEdit" style="font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:8px;border:0;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#1A1206;cursor:pointer;box-shadow:var(--glow)">${state.editSaving ? "Salvando…" : "Salvar alterações"}</button>
+        <button data-action="saveEdit" style="font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:8px;border:0;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#1A1206;cursor:pointer;box-shadow:var(--glow);display:inline-flex;align-items:center;gap:7px"><span style="${ico(P.save, 13)}"></span>${state.editSaving ? "Salvando…" : "Salvar alterações"}</button>
       </div>
     </div>
   </div>`;
@@ -340,7 +349,7 @@ function leadEditModal() {
   <div class="modal-overlay" style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px">
     <div style="width:560px;max-height:88vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:18px">
       <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:16px;font-weight:600;letter-spacing:-.3px">Editar lead</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:16px;font-weight:600;letter-spacing:-.3px"><span style="${ico(P.pencil, 15)};color:var(--accent)"></span>Editar lead</div>
         <button data-action="closeLeadEdit" style="border:1px solid var(--line);background:var(--surface);color:var(--text3);border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:15px;line-height:1">×</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
@@ -351,7 +360,7 @@ function leadEditModal() {
       <div style="font-size:12px;min-height:16px;color:${state.leadEditErr ? "var(--badFg)" : "var(--muted)"}">${esc(state.leadEditMsg)}</div>
       <div style="display:flex;gap:9px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:16px">
         <button data-action="closeLeadEdit" style="font-size:12.5px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer">Cancelar</button>
-        <button data-action="saveLeadEdit" style="font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:8px;border:0;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#1A1206;cursor:pointer;box-shadow:var(--glow)">${state.leadEditSaving ? "Salvando…" : "Salvar alterações"}</button>
+        <button data-action="saveLeadEdit" style="font-size:12.5px;font-weight:600;padding:10px 18px;border-radius:8px;border:0;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#1A1206;cursor:pointer;box-shadow:var(--glow);display:inline-flex;align-items:center;gap:7px"><span style="${ico(P.save, 13)}"></span>${state.leadEditSaving ? "Salvando…" : "Salvar alterações"}</button>
       </div>
     </div>
   </div>`;
@@ -537,7 +546,7 @@ function dashHtml({ deals, at, sum, closedTotal, active, lostList }) {
 
     <div style="display:grid;grid-template-columns:.9fr 1.4fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;align-items:stretch">
       <section style="background:var(--surface);padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px">
-        <div style="font-size:13px;font-weight:600;align-self:flex-start">Meta do mês</div>
+        <div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;align-self:flex-start"><span style="${ico(P.target, 14)};color:var(--accent)"></span>Meta do mês</div>
         <div style="position:relative;width:132px;height:132px">
           <svg viewBox="0 0 132 132" style="transform:rotate(-90deg)">
             <circle cx="66" cy="66" r="56" fill="none" stroke="var(--line)" stroke-width="12" />
@@ -554,7 +563,7 @@ function dashHtml({ deals, at, sum, closedTotal, active, lostList }) {
 
       <section style="background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:16px">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
-          <div style="font-size:13px;font-weight:600">Valor por etapa do funil</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600"><span style="${ico(P.trend, 14)};color:var(--accent)"></span>Valor por etapa do funil</div>
           <div style="font-size:11px;color:var(--muted2)">em milhares (R$ K)</div>
         </div>
         <svg viewBox="0 0 360 150" style="width:100%;height:150px;overflow:visible">
@@ -573,7 +582,7 @@ function dashHtml({ deals, at, sum, closedTotal, active, lostList }) {
       </section>
 
       <section style="background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:16px;align-items:center">
-        <div style="font-size:13px;font-weight:600;align-self:flex-start">Origem dos leads</div>
+        <div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;align-self:flex-start"><span style="${ico(P.tag, 14)};color:var(--accent)"></span>Origem dos leads</div>
         <svg viewBox="0 0 120 120" style="width:120px;height:120px">
           ${segs.map(d => `<circle cx="60" cy="60" r="46" fill="none" stroke="${d.color}" stroke-width="16" stroke-dasharray="${d.dash}" stroke-dashoffset="${d.offset}" transform="rotate(-90 60 60)" />`).join("")}
           <circle cx="60" cy="60" r="30" fill="var(--surface)" />
@@ -590,7 +599,7 @@ function dashHtml({ deals, at, sum, closedTotal, active, lostList }) {
     </div>
 
     <section>
-      <div style="font-size:13px;font-weight:600;margin-bottom:14px">Agenda técnica</div>
+      <div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;margin-bottom:14px"><span style="${ico(P.calendar, 14)};color:var(--accent)"></span>Agenda técnica</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
         ${[
           ["Próximas visitas", P.pin, active.length + " projetos ativos", "Acompanhe pelo funil"],
@@ -633,12 +642,13 @@ function funnelHtml({ at, sum }) {
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
           <div style="font-size:12.5px;font-weight:500;line-height:1.35">${esc(c.name)}</div>
           <button data-action="editLead" data-id="${c.id}" title="Editar lead" style="flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border:1px solid var(--line);background:var(--surface);border-radius:6px;cursor:pointer;color:var(--muted2)" class="hoverable">
-            <span style="${ico(P.file, 11)}"></span>
+            <span style="${ico(P.pencil, 11)}"></span>
           </button>
         </div>
         <div style="font-size:13px;font-weight:600;color:var(--text);margin-top:8px">${brl(c.value)}</div>
         <div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted2);margin-top:8px"><span style="${ico(P.user, 11)}"></span>${esc(c.owner)}</div>
-        ${c.reason ? `<div style="font-size:10.5px;color:var(--accFg);margin-top:6px">${esc(c.reason)}</div>` : ""}
+        ${c.reason ? `<div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--accFg);margin-top:6px"><span style="${ico(P.alert, 10)}"></span>${esc(c.reason)}</div>` : ""}
+        ${c.nextAction ? `<div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted2);margin-top:5px"><span style="${ico(P.clock, 10)}"></span>${esc(c.nextAction)}${c.nextActionAt ? " · " + esc(c.nextActionAt) : ""}</div>` : ""}
         <select data-action="setStage" data-id="${c.id}" style="width:100%;margin-top:10px;border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:6px 8px;font-size:11.5px;color:var(--text2);outline:none;cursor:pointer">${stageOptions}</select>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${actionsHtml}</div>
       </div>`;
@@ -677,7 +687,7 @@ function clientsHtml({ closed, closedTotal }) {
       <div><span style="${c.isPartner ? chip("var(--accSoft)", "var(--accFg)") : chip("var(--soft)", "var(--text3)")}">${c.isPartner ? "Parceria" : "Cliente"}</span></div>
       <div>
         <button data-action="editClient" data-id="${c.id}" title="Editar cliente" style="display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;padding:6px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--text3);cursor:pointer" class="hoverable">
-          <span style="${ico(P.file, 12)}"></span>Editar
+          <span style="${ico(P.pencil, 12)}"></span>Editar
         </button>
       </div>
     </div>`).join("");
@@ -685,7 +695,7 @@ function clientsHtml({ closed, closedTotal }) {
   return `
   <section style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)">
     <div style="display:grid;grid-template-columns:1.7fr 1fr .9fr .8fr .8fr .7fr 70px;gap:12px;font-size:11px;color:var(--muted2);padding:13px 20px;border-bottom:1px solid var(--line)">
-      <div>Cliente</div><div>Cidade / UF</div><div>Valor do projeto</div><div>Situação</div><div>Responsável</div><div>Classificação</div><div></div>
+      <div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.building, 11)}"></span>Cliente</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.pin, 11)}"></span>Cidade / UF</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.money, 11)}"></span>Valor do projeto</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.check, 11)}"></span>Situação</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.user, 11)}"></span>Responsável</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.tag, 11)}"></span>Classificação</div><div></div>
     </div>
     ${rows || `<div style="padding:26px 20px;font-size:12.5px;color:var(--faint)">Nenhum projeto fechado ainda.</div>`}
     <div style="padding:14px 20px;font-size:11.5px;color:var(--muted2);display:flex;gap:26px">
@@ -717,19 +727,19 @@ function lostHtml({ lostList, sum }) {
   <div style="display:flex;flex-direction:column;gap:20px">
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
       ${[
-        ["Projetos em reciclagem", String(lostList.length)],
-        ["Valor recuperável", compact(sum(lostList))],
-        ["Ticket médio perdido", lostList.length ? compact(Math.round(sum(lostList) / lostList.length)) : "R$ 0 K"],
-      ].map(([label, value]) => `<div style="background:var(--surface);padding:20px 22px"><div style="font-size:11.5px;color:var(--muted)">${label}</div><div style="font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.6px">${value}</div></div>`).join("")}
+        ["Projetos em reciclagem", String(lostList.length), P.recycle],
+        ["Valor recuperável", compact(sum(lostList)), P.money],
+        ["Ticket médio perdido", lostList.length ? compact(Math.round(sum(lostList) / lostList.length)) : "R$ 0 K", P.trend],
+      ].map(([label, value, icon]) => `<div style="background:var(--surface);padding:20px 22px"><div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)"><span style="${ico(icon, 13)}"></span>${label}</div><div style="font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.6px">${value}</div></div>`).join("")}
     </div>
     <section style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)">
       <div style="display:grid;grid-template-columns:1.6fr .9fr 1.2fr .8fr .9fr 1fr;gap:12px;font-size:11px;color:var(--muted2);padding:13px 20px;border-bottom:1px solid var(--line)">
-        <div>Projeto perdido</div><div>Valor</div><div>Motivo</div><div>Perdida em</div><div>Retomar</div><div></div>
+        <div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.x, 11)}"></span>Projeto perdido</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.money, 11)}"></span>Valor</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.alert, 11)}"></span>Motivo</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.calendar, 11)}"></span>Perdida em</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.clock, 11)}"></span>Retomar</div><div></div>
       </div>
       ${rows || `<div style="padding:26px 20px;font-size:12.5px;color:var(--faint)">Nenhuma lead na reciclagem.</div>`}
     </section>
     <section>
-      <div style="font-size:13px;font-weight:600;margin-bottom:14px">Principais motivos de perda</div>
+      <div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;margin-bottom:14px"><span style="${ico(P.alert, 14)};color:var(--accent)"></span>Principais motivos de perda</div>
       <div style="display:flex;flex-direction:column;gap:12px;max-width:520px">
         ${reasonList.map(([name, p]) => `
           <div style="display:flex;align-items:center;gap:14px">
@@ -774,7 +784,7 @@ function commHtml() {
   <div style="display:flex;flex-direction:column;gap:26px">
     <section style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);min-width:0">
       <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.1fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr) 140px;gap:14px;font-size:11px;color:var(--muted2);padding:13px 20px;border-bottom:1px solid var(--line)">
-        <div>Projeto</div><div>Cliente</div><div>Responsável</div><div>Valor do projeto</div><div>Comissão</div><div>Status</div>
+        <div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.bolt, 11)}"></span>Projeto</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.building, 11)}"></span>Cliente</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.user, 11)}"></span>Responsável</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.money, 11)}"></span>Valor do projeto</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.percent, 11)}"></span>Comissão</div><div style="display:flex;align-items:center;gap:6px"><span style="${ico(P.check, 11)}"></span>Status</div>
       </div>
       ${rows || `<div style="padding:26px 20px;font-size:12.5px;color:var(--faint)">Nenhuma comissão apurada ainda.</div>`}
       <div style="display:flex;gap:28px;padding:15px 20px;font-size:11.5px;color:var(--muted2);white-space:nowrap;flex-wrap:wrap">
@@ -784,7 +794,7 @@ function commHtml() {
       </div>
     </section>
     <section style="display:flex;flex-direction:column;gap:14px">
-      <div style="font-size:13px;font-weight:600">Regra de comissionamento</div>
+      <div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600"><span style="${ico(P.percent, 14)};color:var(--accent)"></span>Regra de comissionamento</div>
       <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);padding:18px 20px;max-width:320px">
         <div style="font-size:28px;font-weight:600;letter-spacing:-.7px;background:linear-gradient(140deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent">5%</div>
         <div style="font-size:12.5px;font-weight:500;margin-top:7px">Comissão do projeto</div>
@@ -810,16 +820,16 @@ function reportsHtml({ deals, at, closed, closedTotal, active }) {
   const regionList = Object.entries(regionMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   const reportCards = [
-    ["Ticket médio", closed.length ? compact(Math.round(closedTotal / closed.length)) : "R$ 0 K", "Média dos projetos fechados"],
-    ["Valor em negociação", compact(active.reduce((t, d) => t + d.value, 0)), active.length + " projetos no funil"],
-    ["Comissão apurada", brl(Math.round(closedTotal * 0.05)), "5% sobre os fechados"],
+    ["Ticket médio", closed.length ? compact(Math.round(closedTotal / closed.length)) : "R$ 0 K", "Média dos projetos fechados", P.trend],
+    ["Valor em negociação", compact(active.reduce((t, d) => t + d.value, 0)), active.length + " projetos no funil", P.layers],
+    ["Comissão apurada", brl(Math.round(closedTotal * 0.05)), "5% sobre os fechados", P.percent],
   ];
 
   return `
   <div style="display:flex;flex-direction:column;gap:28px">
     <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start">
       <section>
-        <div style="font-size:13px;font-weight:600;margin-bottom:18px">Conversão por etapa</div>
+        <div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;margin-bottom:18px"><span style="${ico(P.funnel, 14)};color:var(--accent)"></span>Conversão por etapa</div>
         <div style="display:flex;flex-direction:column;gap:14px">
           ${conv.map(([name, p]) => `
             <div style="display:flex;align-items:center;gap:14px">
@@ -830,14 +840,14 @@ function reportsHtml({ deals, at, closed, closedTotal, active }) {
         </div>
       </section>
       <section>
-        <div style="font-size:13px;font-weight:600;margin-bottom:18px">Desempenho por região</div>
+        <div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;margin-bottom:18px"><span style="${ico(P.pin, 14)};color:var(--accent)"></span>Desempenho por região</div>
         <div style="display:flex;flex-direction:column;gap:0">
           ${regionList.map(([name, val]) => `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;border-bottom:1px solid var(--line);padding:11px 0"><span style="color:var(--text2)">${esc(name)}</span><b style="font-weight:600">${compact(val)}</b></div>`).join("") || `<div style="font-size:12.5px;color:var(--faint);padding:11px 0">Sem dados de região.</div>`}
         </div>
       </section>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden">
-      ${reportCards.map(([label, value, note]) => `<div style="background:var(--surface);padding:20px 22px"><div style="font-size:11.5px;color:var(--muted)">${label}</div><div style="font-size:24px;font-weight:600;margin:8px 0 5px;letter-spacing:-.7px">${value}</div><div style="font-size:11.5px;color:var(--muted)">${note}</div></div>`).join("")}
+      ${reportCards.map(([label, value, note, icon]) => `<div style="background:var(--surface);padding:20px 22px"><div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)"><span style="${ico(icon, 13)}"></span>${label}</div><div style="font-size:24px;font-weight:600;margin:8px 0 5px;letter-spacing:-.7px">${value}</div><div style="font-size:11.5px;color:var(--muted)">${note}</div></div>`).join("")}
     </div>
   </div>`;
 }
