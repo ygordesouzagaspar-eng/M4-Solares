@@ -61,7 +61,7 @@ const P = {
   logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
 };
 const DONUT_COLORS = ["var(--accent)", "var(--accent2)", "#C97A2E", "var(--bar2)", "var(--faint)"];
-const uri = p => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`)}")`;
+const uri = p => `url('data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`)}')`;
 const ico = (p, size = 15) => { const u = uri(p); return `display:inline-block;flex:0 0 auto;width:${size}px;height:${size}px;background:currentColor;-webkit-mask:${u} center/contain no-repeat;mask:${u} center/contain no-repeat`; };
 
 const EMPTY_FORM = {
@@ -895,8 +895,27 @@ document.addEventListener("input", (e) => {
 
 /* =========================================================== bootstrap */
 render();
-if (window.onAuthReady) window.onAuthReady(() => load());
-else setState({ loading: false, err: "auth.js não carregado." });
+
+(function bootstrap() {
+  let tries = 0;
+  function attempt() {
+    if (window.onAuthReady) {                 // auth.js pronto
+      window.onAuthReady(() => load());
+      return;
+    }
+    if (++tries < 60) { setTimeout(attempt, 100); return; }   // espera até 6s
+
+    // diagnóstico real do que faltou
+    let motivo;
+    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+      motivo = "config.js não carregou (verifique se o arquivo está na mesma pasta do index.html).";
+    } else {
+      motivo = "auth.js não carregou ou falhou ao iniciar. Abra o console do navegador (F12) para ver o erro.";
+    }
+    setState({ loading: false, err: motivo });
+  }
+  attempt();
+})();
 </script>
 </body>
 </html>
