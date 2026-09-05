@@ -16,11 +16,11 @@
       const { data, error } = await window.sb
         .from("projects")
         .select(`
-          id, title, stage, value_brl, city, uf, source,
+          id, title, stage, value_brl, city, uf, source, client_id,
           lost_at, recycle_at, loss_reason_id,
           opportunity_type, first_contact_at, avg_bill_brl, has_solar, deadline, need_detail,
           last_contact_at, last_contact_channel, last_contact_note, next_action, next_action_at,
-          clients ( id, name, kind, doc, contact_name, contact_role, whatsapp, phone, segment ),
+          clients ( id, name, kind, doc, contact_name, contact_role, whatsapp, phone, email, address, segment, is_partner ),
           consultants ( id, name ),
           loss_reasons ( label )
         `)
@@ -34,6 +34,9 @@
       return (data || []).map((p) => ({
         id: p.id,
         name: p.title,
+        clientId: p.client_id,
+        client: p.clients || null,
+        isPartner: !!p.clients?.is_partner,
         type: p.clients
           ? `${p.clients.kind} · ${/^\d{14}$/.test((p.clients.doc || "").replace(/\D/g, "")) ? "CNPJ" : "CPF"}`
           : "—",
@@ -96,9 +99,12 @@
             contact_role: form.contactRole || null,
             whatsapp: form.whatsapp || null,
             phone: form.whatsapp || null,
+            email: form.email || null,
+            address: form.address || null,
             segment: form.segment || null,
             city: form.city || null,
             uf: (form.uf || "").toUpperCase().slice(0, 2) || null,
+            is_partner: form.classification === "Parceria",
             owner_id: ownerId,
           })
           .select("id")
@@ -134,6 +140,66 @@
         .single();
       if (error) throw error;
       return data.id;
+    },
+
+    /* --------------------------------------------------- editar cliente */
+    /* Atualiza o MESMO registro (nunca cria um novo cliente).
+       form: { name, kind, doc, contactName, contactRole, whatsapp, email,
+               address, segment, city, uf, classification } */
+    async updateClient(clientId, form) {
+      const { error } = await window.sb
+        .from("clients")
+        .update({
+          name: form.name.trim(),
+          kind: form.kind || "Residencial",
+          doc: form.doc || null,
+          contact_name: form.contactName || null,
+          contact_role: form.contactRole || null,
+          whatsapp: form.whatsapp || null,
+          phone: form.whatsapp || null,
+          email: form.email || null,
+          address: form.address || null,
+          segment: form.segment || null,
+          city: form.city || null,
+          uf: (form.uf || "").toUpperCase().slice(0, 2) || null,
+          is_partner: form.classification === "Parceria",
+        })
+        .eq("id", clientId);
+      if (error) throw error;
+    },
+
+    /* --------------------------------------------------- comissionamento */
+    async listCommissions() {
+      const { data, error } = await window.sb
+        .from("commissions")
+        .select(`
+          id, project_id, base_brl, rate, amount_brl, status, period,
+          projects ( title, clients ( name, is_partner ) ),
+          consultants ( name )
+        `)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []).map((c) => ({
+        id: c.id,
+        projectId: c.project_id,
+        project: c.projects?.title || "—",
+        client: c.projects?.clients?.name || "—",
+        isPartner: !!c.projects?.clients?.is_partner,
+        consultant: c.consultants?.name || "—",
+        base: Number(c.base_brl) || 0,
+        rate: Number(c.rate) || 0,
+        amount: Number(c.amount_brl) || 0,
+        status: c.status,
+      }));
+    },
+
+    /* status: "Em análise" | "Aprovado" | "Cancelado" */
+    async setCommissionStatus(commissionId, status) {
+      const { error } = await window.sb
+        .from("commissions")
+        .update({ status })
+        .eq("id", commissionId);
+      if (error) throw error;
     },
   };
 
